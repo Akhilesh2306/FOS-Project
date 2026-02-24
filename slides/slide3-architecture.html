@@ -1,0 +1,167 @@
+<div class="slide slide-light slide-scroll" id="slide-3">
+  <div class="slide-inner">
+    <div class="slide-badge-outline">Solution Architecture</div>
+    <div class="slide-title">Snowflake-native. <span class="highlight-text">Azure as needed.</span></div>
+    <div class="slide-subtitle">
+      Data, agents, AI, and state management all run inside Snowflake. Azure provides pub/sub and overflow compute.
+    </div>
+
+    <div class="arch-zones">
+
+      <!-- Row 1: Consumers -->
+      <div class="arch-layer arch-consumers">
+        <div class="arch-label">Consumers</div>
+        <div class="arch-row">
+          <div class="arch-box">
+            <div class="arch-box-name">Account Executives</div>
+            <div class="arch-box-desc">Recommendations, meeting prep, playbooks, feedback</div>
+          </div>
+          <div class="arch-box">
+            <div class="arch-box-name">Sales Engineers</div>
+            <div class="arch-box-desc">Technical handoff context, demo prep, question packages</div>
+          </div>
+          <div class="arch-box">
+            <div class="arch-box-name">Sales Managers</div>
+            <div class="arch-box-desc">Pipeline health, team metrics, coaching, MEDDPICC</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-zone-arrow"><div class="arch-zone-arrow-both"><div class="arch-zone-arrow-up"></div><div class="arch-zone-arrow-down"></div></div></div>
+
+      <!-- Row 2: Delivery -->
+      <div class="arch-layer arch-delivery">
+        <div class="arch-label">Delivery Channels</div>
+        <div class="arch-row">
+          <div class="arch-box">
+            <div class="arch-box-name">Slack Bot</div>
+            <div class="arch-box-desc">Commands, proactive DMs, feedback buttons</div>
+          </div>
+          <div class="arch-box">
+            <div class="arch-box-name">Web Dashboard</div>
+            <div class="arch-box-desc">Full web app for AEs and Managers</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-zone-arrow"><div class="arch-zone-arrow-both"><div class="arch-zone-arrow-up"></div><div class="arch-zone-arrow-down"></div></div></div>
+
+      <!-- Row 3: Two zones side by side -->
+      <div class="arch-zones-row">
+
+        <!-- Snowflake Zone (large, left) -->
+        <div class="arch-zone arch-zone-snowflake">
+          <div class="arch-zone-label">Snowflake</div>
+          <div class="arch-zone-inner">
+
+            <!-- SPCS sub-zone -->
+            <div class="arch-subzone">
+              <div class="arch-subzone-label">Snowpark Container Services</div>
+              <div class="arch-row">
+                <div class="arch-box">
+                  <div class="arch-box-name">FastAPI + LangGraph Agents</div>
+                  <div class="arch-box-desc">Co-located in SPCS. FastAPI routes requests. 5 agents (Detection, NBA, Playbook, RAG, Feedback) invoke tools that write to Hybrid Tables via Snowpark SDK. No separate backend hop.</div>
+                </div>
+                <div class="arch-box">
+                  <div class="arch-box-name">Agent State</div>
+                  <div class="arch-box-desc">langgraph-checkpoint-snowflake. Persists checkpoints and memory after each agent step. No PostgreSQL.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Services sub-zone -->
+            <div class="arch-subzone">
+              <div class="arch-subzone-label">AI Services</div>
+              <div class="arch-row">
+                <div class="arch-box">
+                  <div class="arch-box-name">Cortex LLM</div>
+                  <div class="arch-box-desc">Text generation and classification. Data never leaves Snowflake.</div>
+                </div>
+                <div class="arch-box">
+                  <div class="arch-box-name">Cortex Search</div>
+                  <div class="arch-box-desc">Vector similarity search for RAG content retrieval.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Data Platform sub-zone -->
+            <div class="arch-subzone">
+              <div class="arch-subzone-label">Data Platform</div>
+              <div class="arch-row">
+                <div class="arch-box" style="flex: 2;">
+                  <div class="arch-box-name">Dynamic Tables (Medallion)</div>
+                  <div class="arch-box-desc">Auto-refresh transformations. No dbt.</div>
+                  <div class="arch-tiers">
+                    <span class="arch-tier">Bronze (35)</span>
+                    <span class="arch-tier-arrow">&rarr;</span>
+                    <span class="arch-tier">Silver (35)</span>
+                    <span class="arch-tier-arrow">&rarr;</span>
+                    <span class="arch-tier">Gold (27)</span>
+                    <span class="arch-tier-arrow">&rarr;</span>
+                    <span class="arch-tier">Semantic (11)</span>
+                  </div>
+                </div>
+                <div class="arch-box">
+                  <div class="arch-box-name">Hybrid Tables (10)</div>
+                  <div class="arch-box-desc">FOS operational data. SPCS agents write directly via Snowpark SDK. Low-latency ACID. No CDC needed.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Other native services -->
+            <div class="arch-row" style="gap: 8px; flex-wrap: wrap;">
+              <div class="arch-infra-tag">OpenFlow (SFDC ingestion)</div>
+              <div class="arch-infra-tag">Snowflake Tasks (scheduling)</div>
+              <div class="arch-infra-tag">Streamlit in Snowflake (test harness)</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Azure + External Zone (narrow, right) -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+
+          <!-- Azure Zone -->
+          <div class="arch-zone arch-zone-azure">
+            <div class="arch-zone-label">Azure</div>
+            <div class="arch-zone-inner">
+              <div class="arch-box">
+                <div class="arch-box-name">Azure Event Hubs</div>
+                <div class="arch-box-desc">Pub/sub event streaming for real-time agent triggering</div>
+              </div>
+              <div class="arch-box">
+                <div class="arch-box-name">Container Apps</div>
+                <div class="arch-box-desc">Overflow compute and backend services as needed</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- External Zone -->
+          <div class="arch-zone arch-zone-external">
+            <div class="arch-zone-label">External</div>
+            <div class="arch-zone-inner">
+              <div class="arch-box">
+                <div class="arch-box-name">Salesforce</div>
+                <div class="arch-box-desc">9 objects via OpenFlow</div>
+              </div>
+              <div class="arch-box">
+                <div class="arch-box-name">Gong</div>
+                <div class="arch-box-desc">16 objects (connector TBD)</div>
+              </div>
+              <div class="arch-box">
+                <div class="arch-box-name">Guru / Content</div>
+                <div class="arch-box-desc">Battle cards, case studies</div>
+              </div>
+              <div class="arch-box">
+                <div class="arch-box-name">LangSmith</div>
+                <div class="arch-box-desc">Agent tracing and monitoring</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medallion Architecture - FOS Architecture Deep Dive</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#F6F6FA;color:#2E2E38;line-height:1.6}
+
+/* Side Navigation */
+.side-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100}
+.side-nav a{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;color:#747480;transition:all 0.2s;border-left:3px solid transparent}
+.side-nav a:hover{background:#EDEDF0;color:#2E2E38}
+.side-nav a.active{background:#FFF9E0;color:#2E2E38;border-left-color:#FFE600;font-weight:600}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#C8C8D0;flex-shrink:0}
+.side-nav a.active .nav-dot{background:#FFE600}
+.side-nav a:hover .nav-dot{background:#747480}
+
+/* Header */
+.header{text-align:center;padding:64px 24px 40px}
+.part-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#747480;margin-bottom:12px}
+.page-title{font-size:36px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.page-subtitle{font-size:16px;color:#747480;max-width:720px;margin:0 auto;line-height:1.6}
+
+/* Page Container */
+.page{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+/* Section */
+.section{margin-bottom:56px;scroll-margin-top:40px}
+.section-header{margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.section-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FFE600;color:#2E2E38;font-size:14px;font-weight:700;flex-shrink:0}
+.section-title{font-size:22px;font-weight:700;color:#2E2E38}
+.section-subtitle{font-size:14px;color:#747480;margin-top:4px}
+
+/* Purpose/Intro Block */
+.purpose-block{border-left:4px solid #FFE600;padding:16px 20px;background:#FFFDE6;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.7}
+
+/* Cards */
+.card-grid{display:grid;gap:16px;margin-bottom:24px}
+.card-grid-2{grid-template-columns:repeat(2,1fr)}
+.card-grid-3{grid-template-columns:repeat(3,1fr)}
+.card-grid-4{grid-template-columns:repeat(4,1fr)}
+.card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:20px;transition:box-shadow 0.2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.card-desc{font-size:12px;color:#747480;line-height:1.7}
+.card-desc strong{color:#2E2E38}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;background:#FFF;border-radius:8px;overflow:hidden;border:1px solid #E0E0E4}
+thead{background:#F0F0F4}
+th{padding:12px 16px;text-align:left;font-weight:600;color:#2E2E38;border-bottom:2px solid #E0E0E4}
+td{padding:10px 16px;border-bottom:1px solid #F0F0F4;color:#2E2E38;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#FAFAFA}
+
+/* Flow Diagram */
+.flow{display:flex;align-items:center;gap:0;padding:20px 0;overflow-x:auto;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.flow-box{padding:12px 16px;border-radius:8px;font-size:12px;text-align:center;min-width:100px;border:2px solid #E0E0E4;background:#FFF;line-height:1.5}
+.flow-box strong{display:block;font-size:13px;color:#2E2E38}
+.flow-box small{color:#747480}
+.flow-arrow{font-size:18px;color:#747480;padding:0 8px;flex-shrink:0}
+.flow-box.bronze{border-color:#FFE600;background:#FFFDE6}
+.flow-box.silver{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.gold{border-color:#FF9800;background:#FFF3E0}
+.flow-box.semantic{border-color:#6A1B9A;background:#F3E5F5}
+.flow-box.snowflake{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.azure{border-color:#0078D4;background:#E6F0FA}
+.flow-box.agent{border-color:#FF6B00;background:#FFF3E0}
+.flow-note{font-size:13px;color:#747480;margin-bottom:16px;text-align:center}
+.flow-note strong{color:#2E2E38}
+
+/* Callout Boxes */
+.callout{border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7}
+.callout ul{margin:8px 0 0 18px}
+.callout li{margin-bottom:4px}
+.callout-decided{background:#E6F9E6;border-left:4px solid #2E7D32}
+.callout-open{background:#FFF8E1;border-left:4px solid #F9A825}
+.callout-risk{background:#FDE8E8;border-left:4px solid #C62828}
+.callout-info{background:#E3F2FD;border-left:4px solid #1565C0}
+
+/* Tags */
+.tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:2px 8px;border-radius:4px;margin:0 4px 4px 0;vertical-align:middle}
+.tag-decided{background:#E6F9E6;color:#2E7D32}
+.tag-tbd{background:#FFF8E1;color:#F9A825}
+.tag-risk{background:#FDE8E8;color:#C62828}
+.tag-info{background:#E3F2FD;color:#1565C0}
+
+/* Stat Row */
+.stat-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat{text-align:center;flex:1;min-width:80px;background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:16px 12px}
+.stat-number{font-size:28px;font-weight:700;color:#2E2E38}
+.stat-label{font-size:11px;color:#747480;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* Mono text */
+.mono{font-family:'Consolas','Monaco',monospace;font-size:12px;background:#F0F0F4;padding:1px 6px;border-radius:3px}
+
+/* Column Groups (for semantic layer) */
+.col-group{background:#FFF;border:1px solid #E0E0E4;border-radius:8px;padding:14px}
+.col-group-name{font-size:13px;font-weight:700;color:#2E2E38;margin-bottom:6px}
+.col-group-item{font-size:11px;color:#747480;line-height:1.8;font-family:'Consolas',monospace}
+
+/* Hero View (for semantic layer) */
+.hero-view{background:#FFF;border:2px solid #6A1B9A;border-radius:12px;padding:24px;margin-bottom:24px}
+.hero-view-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6A1B9A;margin-bottom:4px}
+.hero-view-name{font-size:24px;font-weight:700;color:#2E2E38;margin-bottom:8px;font-family:'Consolas',monospace}
+.hero-view-desc{font-size:14px;color:#747480;margin-bottom:16px}
+
+/* Footer */
+.footer{text-align:center;padding:48px 24px;border-top:1px solid #E0E0E4;margin-top:48px}
+.footer-text{font-size:13px;color:#747480;margin-bottom:16px}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.footer-link{font-size:13px;color:#2E2E38;text-decoration:none;padding:8px 16px;border-radius:8px;background:#FFF;border:1px solid #E0E0E4;transition:all 0.2s}
+.footer-link:hover{background:#FFF9E0;border-color:#FFE600}
+.footer-link.current{background:#FFE600;font-weight:600;pointer-events:none}
+
+/* Responsive */
+@media(max-width:1400px){.side-nav{display:none}}
+@media(max-width:1024px){
+  .card-grid-3,.card-grid-4{grid-template-columns:repeat(2,1fr)}
+  .page-title{font-size:28px}
+  .header{padding:48px 24px 32px}
+}
+@media(max-width:640px){
+  .card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}
+  .stat-row{gap:8px}
+  .flow{flex-direction:column;align-items:stretch}
+  .flow-box{min-width:auto}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .page-title{font-size:22px}
+  .page-subtitle{font-size:14px}
+  .section-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDE NAVIGATION -->
+<nav class="side-nav">
+  <a href="#section-1" class="active"><span class="nav-dot"></span> Medallion Flow</a>
+  <a href="#section-2"><span class="nav-dot"></span> Why Dynamic Tables</a>
+  <a href="#section-3"><span class="nav-dot"></span> Gold Domains</a>
+  <a href="#section-4"><span class="nav-dot"></span> Write-Back Loop</a>
+  <a href="#section-5"><span class="nav-dot"></span> Target Lag</a>
+  <a href="#section-6"><span class="nav-dot"></span> Data Quality</a>
+  <a href="#section-7"><span class="nav-dot"></span> Decisions</a>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="part-label">Architecture Deep Dive 02</div>
+  <h1 class="page-title">Medallion Architecture</h1>
+  <p class="page-subtitle">Bronze to Silver to Gold to Semantic. All Snowflake Dynamic Tables, no dbt. 108 total objects across 4 tiers.</p>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="page">
+
+  <!-- STAT ROW -->
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-number">35</div>
+      <div class="stat-label">Bronze Tables</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">35</div>
+      <div class="stat-label">Silver Dynamic Tables</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">27</div>
+      <div class="stat-label">Gold Dynamic Tables</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">11</div>
+      <div class="stat-label">Semantic Views</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">108</div>
+      <div class="stat-label">Total Objects</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: Medallion Flow -->
+  <div class="section" id="section-1">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <h2 class="section-title">Medallion Flow</h2>
+    </div>
+    <div class="purpose-block">
+      FOS uses a four-tier Medallion Architecture implemented entirely inside Snowflake. Every transformation from Silver onward is a Snowflake Dynamic Table. There is no dbt, no Airflow, no external orchestrator. Snowflake itself manages the DAG of dependencies and refreshes downstream tables automatically when upstream data changes.
+    </div>
+
+    <div class="flow">
+      <div class="flow-box bronze">
+        <strong>Bronze (35)</strong>
+        <small>FOS_PROD.BRONZE</small><br>
+        <small>Raw data, no transforms</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box silver">
+        <strong>Silver (35)</strong>
+        <small>FOS_PROD.SILVER</small><br>
+        <small>Cleaned, typed, enriched</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box gold">
+        <strong>Gold (27)</strong>
+        <small>FOS_PROD.GOLD</small><br>
+        <small>Business logic, scoring, joins</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box semantic">
+        <strong>Semantic (11)</strong>
+        <small>FOS_PROD.SEMANTIC</small><br>
+        <small>Agent-facing SQL views</small>
+      </div>
+    </div>
+
+    <div class="flow-note">
+      <strong>Auto-refresh cascade:</strong> OpenFlow lands data in Bronze every 15 min. Snowflake detects the change and refreshes Silver, then Gold, automatically. Semantic views are always current on query.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Schema</th>
+          <th>Object Type</th>
+          <th>Count</th>
+          <th>Refresh Mechanism</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Bronze</strong></td>
+          <td><span class="mono">FOS_PROD.BRONZE</span></td>
+          <td>Regular tables + Hybrid Tables</td>
+          <td>35</td>
+          <td>OpenFlow (SFDC), connector TBD (Gong), direct write (agents)</td>
+        </tr>
+        <tr>
+          <td><strong>Silver</strong></td>
+          <td><span class="mono">FOS_PROD.SILVER</span></td>
+          <td>Dynamic Tables</td>
+          <td>35</td>
+          <td>Auto-refresh when Bronze changes</td>
+        </tr>
+        <tr>
+          <td><strong>Gold</strong></td>
+          <td><span class="mono">FOS_PROD.GOLD</span></td>
+          <td>Dynamic Tables</td>
+          <td>27</td>
+          <td>Auto-refresh when Silver changes</td>
+        </tr>
+        <tr>
+          <td><strong>Semantic</strong></td>
+          <td><span class="mono">FOS_PROD.SEMANTIC</span></td>
+          <td>SQL Views</td>
+          <td>11</td>
+          <td>Always current on query (no materialization)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-title">Bronze Sources</div>
+        <div class="card-desc">
+          <strong>9 Salesforce tables</strong> ingested via OpenFlow every 15 min.<br>
+          <strong>16 Gong tables</strong> with connector TBD.<br>
+          <strong>10 FOS Hybrid Tables</strong> written directly by agents via Snowpark SDK.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Silver Transforms</div>
+        <div class="card-desc">
+          1:1 mapping with Bronze. Standard cleaning: snake_case naming, type casting, null defaults, soft-delete filtering, deduplication, UTC normalization, and single-entity computed fields.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Gold Business Logic</div>
+        <div class="card-desc">
+          Cross-entity joins, scoring formulas, and aggregations organized into <strong>6 business domains</strong>. Health scoring, engagement analytics, Gong intelligence, pipeline forecasting, AI agent ops, and content management.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Why Dynamic Tables -->
+  <div class="section" id="section-2">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <h2 class="section-title">Why Dynamic Tables</h2>
+    </div>
+    <div class="purpose-block">
+      All Silver and Gold transformations are Snowflake Dynamic Tables. We are not using dbt, Airflow, Dagster, or any external transformation orchestrator. This decision trades away dbt's mature testing ecosystem in exchange for zero-infrastructure orchestration and near-real-time refresh.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Factor</th>
+          <th>Dynamic Tables</th>
+          <th>dbt</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Orchestration</strong></td>
+          <td>Snowflake manages the DAG natively</td>
+          <td>Requires external scheduler (Airflow, cron, dbt Cloud)</td>
+        </tr>
+        <tr>
+          <td><strong>Refresh trigger</strong></td>
+          <td>Automatic on upstream data change</td>
+          <td>Scheduled or manually triggered</td>
+        </tr>
+        <tr>
+          <td><strong>Latency</strong></td>
+          <td>Near-real-time (configurable target lag)</td>
+          <td>Batch (typically hourly or longer)</td>
+        </tr>
+        <tr>
+          <td><strong>Infrastructure</strong></td>
+          <td>Zero additional infrastructure</td>
+          <td>Needs dbt Core/Cloud + scheduler + CI/CD pipeline</td>
+        </tr>
+        <tr>
+          <td><strong>Cost model</strong></td>
+          <td>Snowflake compute credits when refresh runs</td>
+          <td>Snowflake compute + orchestrator hosting costs</td>
+        </tr>
+        <tr>
+          <td><strong>Learning curve</strong></td>
+          <td>SQL only, no Jinja templating</td>
+          <td>SQL + Jinja + YAML config + dbt-specific concepts</td>
+        </tr>
+        <tr>
+          <td><strong>Lineage</strong></td>
+          <td>Built into Snowflake UI and metadata</td>
+          <td>Requires dbt docs or external tooling</td>
+        </tr>
+        <tr>
+          <td><strong>Testing</strong></td>
+          <td>Snowflake data quality checks (limited)</td>
+          <td>dbt tests are mature and extensible</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">What We Gain</div>
+        <div class="card-desc">
+          <strong>Zero external orchestration infrastructure.</strong> No Airflow, no cron, no CI/CD pipeline for transforms.<br><br>
+          <strong>Automatic DAG management.</strong> Snowflake infers dependencies from SQL definitions.<br><br>
+          <strong>Near-real-time refresh</strong> without polling or scheduling.<br><br>
+          <strong>Everything stays inside the Snowflake security perimeter.</strong> Data does not leave Snowflake for transformation.<br><br>
+          <strong>Simpler operational footprint.</strong> One fewer system to monitor and maintain.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">What We Lose</div>
+        <div class="card-desc">
+          <strong>dbt's mature testing framework</strong> (schema tests, data tests, custom generic tests).<br><br>
+          <strong>Incremental model strategies</strong> (merge, delete+insert, insert_overwrite).<br><br>
+          <strong>Version-controlled transformations in Git</strong> with PR review. Dynamic Tables are defined in Snowflake, not in repo files.<br><br>
+          <strong>Community packages</strong> (dbt_utils, codegen, audit_helper).<br><br>
+          <strong>Easy dry-run / compile-only mode</strong> for development.
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <strong>Cost at MVP scale:</strong> Dynamic Tables consume Snowflake credits only when they refresh. For FOS at MVP scale (tens of opportunities, not millions), costs should be negligible. At production scale with full pipeline volume, credit consumption needs monitoring and target lag tuning.
+    </div>
+  </div>
+
+  <!-- SECTION 3: Gold Domains -->
+  <div class="section" id="section-3">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <h2 class="section-title">Gold Domains</h2>
+    </div>
+    <div class="purpose-block">
+      Gold is where business logic lives. 27 Dynamic Tables are organized into 6 business domains. Gold tables join across Silver tables, apply scoring formulas, compute aggregations, and create business-meaningful entities.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th>Name</th>
+          <th>Views</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1</strong></td>
+          <td>Deal Health and Risk</td>
+          <td>7</td>
+          <td>Health scoring, MEDDPICC analysis, stage velocity, risk indicators</td>
+        </tr>
+        <tr>
+          <td><strong>2</strong></td>
+          <td>Engagement Analytics</td>
+          <td>5</td>
+          <td>Stakeholder mapping, activity rollups, contact interaction, outreach prioritization</td>
+        </tr>
+        <tr>
+          <td><strong>3</strong></td>
+          <td>Gong Intelligence</td>
+          <td>5</td>
+          <td>Call summaries, competitor detection, coverage gap analysis</td>
+        </tr>
+        <tr>
+          <td><strong>4</strong></td>
+          <td>Pipeline and Forecasting</td>
+          <td>4</td>
+          <td>Stale deal detection, data completeness, MEDDPICC quality, pipeline metrics</td>
+        </tr>
+        <tr>
+          <td><strong>5</strong></td>
+          <td>AI Agent Ops</td>
+          <td>3</td>
+          <td>LLM context assembly, active recommendations, playbook library</td>
+        </tr>
+        <tr>
+          <td><strong>6</strong></td>
+          <td>Content and Knowledge</td>
+          <td>3</td>
+          <td>Agent trigger queue, recommendation history, RAG content catalog</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-title">Domain 1: Deal Health and Risk (7)</div>
+        <div class="card-desc">
+          <strong>v_opportunity_health_current</strong> - AHP-weighted composite score (0-100) from 5 components<br>
+          <strong>v_opportunity_meddicc_breakdown</strong> - 8 MEDDPICC components scored 0-3 each<br>
+          <strong>v_opportunity_stage_velocity</strong> - Days in stage vs. benchmarks<br>
+          <strong>v_deal_risk_indicators</strong> - 20+ risk signals aggregated<br>
+          <strong>v_deal_health_trend</strong> - Score over time<br>
+          <strong>v_risk_factor_breakdown</strong> - Per-factor risk contribution<br>
+          <strong>v_health_score_distribution</strong> - Pipeline-wide distribution
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Domain 2: Engagement Analytics (5)</div>
+        <div class="card-desc">
+          <strong>v_opportunity_stakeholders_enriched</strong> - Contact roles and engagement scores<br>
+          <strong>v_opportunity_activities_rollup</strong> - Activity counts and trends<br>
+          <strong>v_contact_interaction_history</strong> - Per-contact timeline<br>
+          <strong>v_next_contact_recommendation</strong> - Outreach priority ranking<br>
+          <strong>v_engagement_velocity</strong> - Rate of engagement change
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Domain 3: Gong Intelligence (5)</div>
+        <div class="card-desc">
+          <strong>v_opportunity_gong_calls_summary</strong> - Call aggregates per opportunity<br>
+          <strong>v_opportunity_competitor_intelligence</strong> - Competitor mentions from trackers<br>
+          <strong>v_gong_coverage_gaps</strong> - Deals with missing call data<br>
+          <strong>v_call_quality_analysis</strong> - Talk ratio, question rate metrics<br>
+          <strong>v_topic_trend_analysis</strong> - Tracker trends over time
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Domain 4: Pipeline and Forecasting (4)</div>
+        <div class="card-desc">
+          <strong>v_stale_deals_detection</strong> - Stage-specific staleness thresholds<br>
+          <strong>v_meddicc_quality_dashboard</strong> - Fill rates and coaching priorities<br>
+          <strong>v_data_completeness_score</strong> - Quality score 0-100<br>
+          <strong>v_pipeline_forecast_summary</strong> - Weighted pipeline and stage distribution
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Domain 5: AI Agent Ops (3)</div>
+        <div class="card-desc">
+          <strong>v_opportunity_llm_context</strong> - Complete deal context in a single query. Most critical view in the system. Target: under 500ms.<br>
+          <strong>v_active_recommendations</strong> - Active NBAs with priority ranking<br>
+          <strong>v_playbook_library</strong> - Generated playbooks with versioning
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Domain 6: Content and Knowledge (3)</div>
+        <div class="card-desc">
+          <strong>v_agent_trigger_queue</strong> - Pending events with priority and dedup<br>
+          <strong>v_agent_recommendation_history</strong> - Past NBAs for cooldown logic<br>
+          <strong>v_rag_content_catalog</strong> - Content index for RAG Stage 1 filtering
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Write-Back Loop -->
+  <div class="section" id="section-4">
+    <div class="section-header">
+      <span class="section-number">4</span>
+      <h2 class="section-title">Write-Back Loop</h2>
+    </div>
+    <div class="purpose-block">
+      Agents read from Semantic views, generate outputs, and write those outputs back to Bronze Hybrid Tables. Those Bronze tables feed into Silver and Gold Dynamic Tables. The outputs become inputs, making agent results first-class citizens in the data model.
+    </div>
+
+    <div class="flow">
+      <div class="flow-box agent">
+        <strong>Agent</strong>
+        <small>Reads Semantic view</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box agent">
+        <strong>Generates</strong>
+        <small>NBA / Playbook / Score</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box bronze">
+        <strong>Writes Hybrid Table</strong>
+        <small>Bronze (e.g., fos_next_best_actions)</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box silver">
+        <strong>Auto-refresh</strong>
+        <small>Silver Dynamic Table</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box gold">
+        <strong>Auto-refresh</strong>
+        <small>Gold Dynamic Table</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box semantic">
+        <strong>Semantic</strong>
+        <small>Reflects new data on next query</small>
+      </div>
+    </div>
+
+    <div class="flow-note">
+      Agent outputs flow through the same pipeline as Salesforce and Gong data, enabling cross-entity analytics.
+    </div>
+
+    <div class="callout callout-decided">
+      <strong>NOT an infinite loop.</strong> Agents are event-driven, not continuous. The Detection Agent runs on a 60-minute Snowflake Task schedule. NBA and Playbook agents are invoked by explicit triggers (events from Detection Agent or user requests via Slack/Web). They do not poll for changes. Dynamic Table refresh is idempotent. The data path is acyclic in practice because no part of the pipeline triggers the agent to run again.
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">Why This Is Intentional</div>
+        <div class="card-desc">
+          Agent outputs are first-class citizens in the data model. When a dashboard queries "active recommendations for this deal," the data comes through the same pipeline as everything else. There is no separate API-only data silo. Agent outputs sit alongside Salesforce and Gong data, enabling analytics like "deals where agent recommendations were followed had 15% higher win rates."
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Potential Concerns</div>
+        <div class="card-desc">
+          <strong>Stale reads during refresh:</strong> If an agent queries Semantic while a Gold refresh is in progress, it reads the previously materialized data. The data is at most minutes old. Acceptable for FOS.<br><br>
+          <strong>Write amplification at scale:</strong> If many agents write to many Hybrid Tables simultaneously, the cascade of Silver and Gold refreshes could consume significant compute. This needs monitoring at production scale.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Target Lag -->
+  <div class="section" id="section-5">
+    <div class="section-header">
+      <span class="section-number">5</span>
+      <h2 class="section-title">Target Lag</h2>
+    </div>
+    <div class="purpose-block">
+      Each Dynamic Table has a target lag setting that controls maximum staleness. This is a guarantee, not a fixed schedule. If upstream data has not changed, Snowflake does not refresh. If upstream data changes, Snowflake refreshes within the target lag window.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Target Lag</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Silver</strong></td>
+          <td>5 minutes downstream of Bronze</td>
+          <td>Fast enough for near-real-time. Affordable at MVP scale.</td>
+        </tr>
+        <tr>
+          <td><strong>Gold (most views)</strong></td>
+          <td>10 minutes downstream of Silver</td>
+          <td>Business logic views do not need sub-minute freshness.</td>
+        </tr>
+        <tr>
+          <td><strong>Gold (v_opportunity_llm_context)</strong></td>
+          <td>5 minutes downstream of Silver</td>
+          <td>Agents need this view to be as fresh as practical. Most critical view in the system.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-title">Failure Handling</div>
+        <div class="card-desc">
+          If a Dynamic Table refresh fails, Snowflake retries automatically. The previous materialized result remains available for reads. Queries do not fail. The table enters a "refresh failed" state visible in INFORMATION_SCHEMA and the Dynamic Table monitor.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Monitoring</div>
+        <div class="card-desc">
+          Track refresh frequency, actual lag vs. target, failures, and credit consumption across all 62 Dynamic Tables (35 Silver + 27 Gold) via INFORMATION_SCHEMA.DYNAMIC_TABLE_REFRESH_HISTORY and DYNAMIC_TABLE_GRAPH_HISTORY.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cost Drivers</div>
+        <div class="card-desc">
+          <strong>Frequency of upstream changes.</strong> SFDC data arrives every 15 min via OpenFlow.<br>
+          <strong>Complexity of transformation.</strong> Simple type-cast costs almost nothing. Multi-join scoring views cost more.<br>
+          <strong>Target lag setting.</strong> Shorter lag means more frequent refresh checks.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Data Quality -->
+  <div class="section" id="section-6">
+    <div class="section-header">
+      <span class="section-number">6</span>
+      <h2 class="section-title">Data Quality</h2>
+    </div>
+    <div class="purpose-block">
+      Validation responsibility increases at each tier. Bronze stores data exactly as received with no validation. Silver enforces structural consistency. Gold applies business rules and surfaces quality problems. The v_data_completeness_score Gold view is the primary quality signal consumed by agents.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tier</th>
+          <th>Validation Level</th>
+          <th>What Gets Checked</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Bronze</strong></td>
+          <td>None</td>
+          <td>Data stored exactly as it arrives from source. If Salesforce sends a NULL close_date, Bronze stores a NULL. If Gong sends a duplicate, Bronze stores the duplicate. Only confirmation is that ingestion succeeded (row counts, schema match).</td>
+        </tr>
+        <tr>
+          <td><strong>Silver</strong></td>
+          <td>Structural</td>
+          <td>Type casting (strings that should be dates). Null defaults (0 for amounts, FALSE for booleans). Deduplication from connector resyncs. Soft-delete filtering. Range validation (negative amounts, future dates).</td>
+        </tr>
+        <tr>
+          <td><strong>Gold</strong></td>
+          <td>Business Rules</td>
+          <td>Health score bounds (must be 0-100). MEDDPICC completeness tracking. Staleness thresholds by stage. Data completeness scoring (0-100). Referential integrity (opportunities without accounts, contacts without valid account IDs).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>Agent confidence modulation:</strong> Agents use the v_data_completeness_score to modulate confidence. If the quality score is below a threshold, the agent tells the user: "I don't have enough data to recommend confidently. Here is what is missing."
+    </div>
+
+    <div class="callout callout-risk">
+      <strong>Gaps in current design:</strong> There is no automated data quality testing framework (like dbt tests or Great Expectations). There is no automated alerting when quality degrades. Schema drift detection (source system adds or removes columns) is not handled.
+    </div>
+  </div>
+
+  <!-- SECTION 7: Decisions -->
+  <div class="section" id="section-7">
+    <div class="section-header">
+      <span class="section-number">7</span>
+      <h2 class="section-title">Decisions</h2>
+    </div>
+    <div class="purpose-block">
+      Key architectural decisions that have been made and open questions that still need resolution. Decided items are locked. Open items need research and team input before they can be resolved.
+    </div>
+
+    <div class="callout callout-decided">
+      <strong>Decided</strong>
+      <ul>
+        <li><strong>Dynamic Tables for all Silver and Gold transformations.</strong> No dbt, no Airflow, no external orchestrator.</li>
+        <li><strong>AHP health score weights:</strong> Activity 30%, Threading 25%, Velocity 20%, MEDDPICC 15%, Close Date 10%.</li>
+        <li><strong>Hybrid Tables for write-back.</strong> Agents write to Bronze Hybrid Tables via Snowpark SDK. OLTP-grade ACID writes, no CDC or intermediate store needed.</li>
+        <li><strong>Agents query Semantic only.</strong> Agents never touch Bronze, Silver, or Gold directly. The 11 Semantic views are the sole interface for AI consumers.</li>
+        <li><strong>Salesforce ingestion via OpenFlow</strong> with 15-minute incremental sync.</li>
+        <li><strong>MEDDPICC scoring:</strong> 8 components (Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion, Competition, Paper Process), each scored 0-3, total 24.</li>
+        <li><strong>Staleness thresholds are stage-dependent:</strong> Qualification 14 days, Evaluation 7 days, Negotiation 3 days.</li>
+        <li><strong>Everything runs inside Snowflake's security perimeter.</strong> Data does not leave Snowflake for transformation.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-open">
+      <strong>Open</strong>
+      <ul>
+        <li><strong>Dynamic Tables from Hybrid Tables refresh triggers.</strong> Hybrid Tables are OLTP. Dynamic Tables typically source from OLAP tables. Need to confirm refresh triggers work correctly with Hybrid Table upstream sources.</li>
+        <li><strong>Credit consumption at production scale.</strong> MVP has tens of opportunities. Full pipeline has thousands. Will the cascade of 35 Silver + 27 Gold refreshes every 15 minutes be cost-effective?</li>
+        <li><strong>Schema drift handling.</strong> What happens when Salesforce admins add or rename fields? Silver Dynamic Tables may break if they reference hardcoded column names.</li>
+        <li><strong>Historical backfill strategy.</strong> Dynamic Tables are designed for forward-looking refresh. How do we handle the initial load of historical data?</li>
+        <li><strong>Gong connector.</strong> Without this, 16 Bronze tables have no data source. Domain 3 (Gong Intelligence) is blocked. Fivetran is the fallback.</li>
+        <li><strong>No data quality framework.</strong> No automated testing (like dbt tests or Great Expectations), no automated alerting, no schema drift detection. This is a known gap.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">This is one of seven architecture deep dives for the Future of Sales project.</div>
+  <div class="footer-links">
+    <a class="footer-link" href="../01-data-extraction/deep-dive.html">01 Data Extraction</a>
+    <a class="footer-link current" href="#">02 Medallion</a>
+    <a class="footer-link" href="../03-semantic-layer/deep-dive.html">03 Semantic Layer</a>
+    <a class="footer-link" href="../04-rag-pipeline/deep-dive.html">04 RAG Pipeline</a>
+    <a class="footer-link" href="../05-application-layer/deep-dive.html">05 Application</a>
+    <a class="footer-link" href="../06-agent-runtime/deep-dive.html">06 Agent Runtime</a>
+    <a class="footer-link" href="../07-data-flows/deep-dive.html">07 Data Flows</a>
+  </div>
+</div>
+
+<!-- SCROLL SPY -->
+<script>
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.side-nav a');
+window.addEventListener('scroll', function() {
+  let current = '';
+  sections.forEach(function(section) {
+    const sectionTop = section.offsetTop - 100;
+    if (window.scrollY >= sectionTop) current = section.getAttribute('id');
+  });
+  navLinks.forEach(function(link) {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

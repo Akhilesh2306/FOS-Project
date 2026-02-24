@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Runtime - FOS Architecture Deep Dive</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#F6F6FA;color:#2E2E38;line-height:1.6}
+
+/* Side Navigation */
+.side-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100}
+.side-nav a{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;color:#747480;transition:all 0.2s;border-left:3px solid transparent}
+.side-nav a:hover{background:#EDEDF0;color:#2E2E38}
+.side-nav a.active{background:#FFF9E0;color:#2E2E38;border-left-color:#FFE600;font-weight:600}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#C8C8D0;flex-shrink:0}
+.side-nav a.active .nav-dot{background:#FFE600}
+.side-nav a:hover .nav-dot{background:#747480}
+
+/* Header */
+.header{text-align:center;padding:64px 24px 40px}
+.part-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#747480;margin-bottom:12px}
+.page-title{font-size:36px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.page-subtitle{font-size:16px;color:#747480;max-width:720px;margin:0 auto;line-height:1.6}
+
+/* Page Container */
+.page{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+/* Section */
+.section{margin-bottom:56px;scroll-margin-top:40px}
+.section-header{margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.section-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FFE600;color:#2E2E38;font-size:14px;font-weight:700;flex-shrink:0}
+.section-title{font-size:22px;font-weight:700;color:#2E2E38}
+.section-subtitle{font-size:14px;color:#747480;margin-top:4px}
+
+/* Purpose/Intro Block */
+.purpose-block{border-left:4px solid #FFE600;padding:16px 20px;background:#FFFDE6;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.7}
+
+/* Cards */
+.card-grid{display:grid;gap:16px;margin-bottom:24px}
+.card-grid-2{grid-template-columns:repeat(2,1fr)}
+.card-grid-3{grid-template-columns:repeat(3,1fr)}
+.card-grid-4{grid-template-columns:repeat(4,1fr)}
+.card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:20px;transition:box-shadow 0.2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.card-desc{font-size:12px;color:#747480;line-height:1.7}
+.card-desc strong{color:#2E2E38}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;background:#FFF;border-radius:8px;overflow:hidden;border:1px solid #E0E0E4}
+thead{background:#F0F0F4}
+th{padding:12px 16px;text-align:left;font-weight:600;color:#2E2E38;border-bottom:2px solid #E0E0E4}
+td{padding:10px 16px;border-bottom:1px solid #F0F0F4;color:#2E2E38;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#FAFAFA}
+
+/* Flow Diagram */
+.flow{display:flex;align-items:center;gap:0;padding:20px 0;overflow-x:auto;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.flow-box{padding:12px 16px;border-radius:8px;font-size:12px;text-align:center;min-width:100px;border:2px solid #E0E0E4;background:#FFF;line-height:1.5}
+.flow-box strong{display:block;font-size:13px;color:#2E2E38}
+.flow-box small{color:#747480}
+.flow-arrow{font-size:18px;color:#747480;padding:0 8px;flex-shrink:0}
+.flow-box.bronze{border-color:#FFE600;background:#FFFDE6}
+.flow-box.silver{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.gold{border-color:#FF9800;background:#FFF3E0}
+.flow-box.semantic{border-color:#6A1B9A;background:#F3E5F5}
+.flow-box.snowflake{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.azure{border-color:#0078D4;background:#E6F0FA}
+.flow-box.agent{border-color:#FF6B00;background:#FFF3E0}
+.flow-note{font-size:13px;color:#747480;margin-bottom:16px;text-align:center}
+.flow-note strong{color:#2E2E38}
+
+/* Callout Boxes */
+.callout{border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7}
+.callout ul{margin:8px 0 0 18px}
+.callout li{margin-bottom:4px}
+.callout-decided{background:#E6F9E6;border-left:4px solid #2E7D32}
+.callout-open{background:#FFF8E1;border-left:4px solid #F9A825}
+.callout-risk{background:#FDE8E8;border-left:4px solid #C62828}
+.callout-info{background:#E3F2FD;border-left:4px solid #1565C0}
+
+/* Tags */
+.tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:2px 8px;border-radius:4px;margin:0 4px 4px 0;vertical-align:middle}
+.tag-decided{background:#E6F9E6;color:#2E7D32}
+.tag-tbd{background:#FFF8E1;color:#F9A825}
+.tag-risk{background:#FDE8E8;color:#C62828}
+.tag-info{background:#E3F2FD;color:#1565C0}
+
+/* Stat Row */
+.stat-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat{text-align:center;flex:1;min-width:80px;background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:16px 12px}
+.stat-number{font-size:28px;font-weight:700;color:#2E2E38}
+.stat-label{font-size:11px;color:#747480;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* Mono text */
+.mono{font-family:'Consolas','Monaco',monospace;font-size:12px;background:#F0F0F4;padding:1px 6px;border-radius:3px}
+
+/* Column Groups (for semantic layer) */
+.col-group{background:#FFF;border:1px solid #E0E0E4;border-radius:8px;padding:14px}
+.col-group-name{font-size:13px;font-weight:700;color:#2E2E38;margin-bottom:6px}
+.col-group-item{font-size:11px;color:#747480;line-height:1.8;font-family:'Consolas',monospace}
+
+/* Hero View (for semantic layer) */
+.hero-view{background:#FFF;border:2px solid #6A1B9A;border-radius:12px;padding:24px;margin-bottom:24px}
+.hero-view-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6A1B9A;margin-bottom:4px}
+.hero-view-name{font-size:24px;font-weight:700;color:#2E2E38;margin-bottom:8px;font-family:'Consolas',monospace}
+.hero-view-desc{font-size:14px;color:#747480;margin-bottom:16px}
+
+/* Footer */
+.footer{text-align:center;padding:48px 24px;border-top:1px solid #E0E0E4;margin-top:48px}
+.footer-text{font-size:13px;color:#747480;margin-bottom:16px}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.footer-link{font-size:13px;color:#2E2E38;text-decoration:none;padding:8px 16px;border-radius:8px;background:#FFF;border:1px solid #E0E0E4;transition:all 0.2s}
+.footer-link:hover{background:#FFF9E0;border-color:#FFE600}
+.footer-link.current{background:#FFE600;font-weight:600;pointer-events:none}
+
+/* Responsive */
+@media(max-width:1400px){.side-nav{display:none}}
+@media(max-width:1024px){
+  .card-grid-3,.card-grid-4{grid-template-columns:repeat(2,1fr)}
+  .page-title{font-size:28px}
+  .header{padding:48px 24px 32px}
+}
+@media(max-width:640px){
+  .card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}
+  .stat-row{gap:8px}
+  .flow{flex-direction:column;align-items:stretch}
+  .flow-box{min-width:auto}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .page-title{font-size:22px}
+  .page-subtitle{font-size:14px}
+  .section-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDE NAVIGATION -->
+<nav class="side-nav">
+  <a href="#section-1" class="active"><span class="nav-dot"></span> SPCS Container</a>
+  <a href="#section-2"><span class="nav-dot"></span> Five Agents</a>
+  <a href="#section-3"><span class="nav-dot"></span> Tool Inventory</a>
+  <a href="#section-4"><span class="nav-dot"></span> Execution Pattern</a>
+  <a href="#section-5"><span class="nav-dot"></span> Error Handling</a>
+  <a href="#section-6"><span class="nav-dot"></span> State Management</a>
+  <a href="#section-7"><span class="nav-dot"></span> Monitoring</a>
+  <a href="#section-8"><span class="nav-dot"></span> Open Questions</a>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="part-label">Architecture Deep Dive 06</div>
+  <h1 class="page-title">Agent Runtime</h1>
+  <p class="page-subtitle">5 LangGraph agents inside SPCS. Tools, LLM, state management, error handling.</p>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="page">
+
+  <!-- SECTION 1: SPCS Container -->
+  <div class="section" id="section-1">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <h2 class="section-title">SPCS Container</h2>
+    </div>
+    <div class="purpose-block">
+      A single Snowpark Container Services image hosts FastAPI and all five LangGraph agents. No sidecars, no separate workers, no message broker inside the container. All LLM inference is remote via Cortex, so no GPU is needed.
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-number">2</div>
+        <div class="stat-label">CPU Cores</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">4 GB</div>
+        <div class="stat-label">RAM</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">0</div>
+        <div class="stat-label">GPU</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">2-10</div>
+        <div class="stat-label">Replicas</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">3.11</div>
+        <div class="stat-label">Python</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">~1.3 GB</div>
+        <div class="stat-label">Image Size</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Package</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="mono">FastAPI</span></td>
+          <td>HTTP server, request routing, health checks</td>
+        </tr>
+        <tr>
+          <td><span class="mono">LangGraph 1.0</span></td>
+          <td>Agent orchestration framework (StateGraph, nodes, edges, checkpointing)</td>
+        </tr>
+        <tr>
+          <td><span class="mono">langgraph-checkpoint-snowflake</span></td>
+          <td>State persistence to Snowflake tables after each graph node</td>
+        </tr>
+        <tr>
+          <td><span class="mono">Snowpark SDK</span></td>
+          <td>Query Semantic views and write to Hybrid Tables</td>
+        </tr>
+        <tr>
+          <td><span class="mono">langchain-snowflake</span></td>
+          <td>Cortex LLM and Cortex Search integration</td>
+        </tr>
+        <tr>
+          <td><span class="mono">azure-eventhub</span></td>
+          <td>Event Hubs producer and consumer for agent coordination</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 2: Five Agents -->
+  <div class="section" id="section-2">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <h2 class="section-title">Five Agents</h2>
+    </div>
+    <div class="purpose-block">
+      Each agent has a single responsibility. They coordinate through Azure Event Hubs and share state through Snowflake Hybrid Tables. No agent tries to do everything.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Role</th>
+          <th>Trigger</th>
+          <th>Uses LLM</th>
+          <th>Writes To</th>
+          <th>Latency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Detection</strong></td>
+          <td>Monitor</td>
+          <td>60-min Snowflake Task</td>
+          <td><span class="tag tag-info">No</span></td>
+          <td><span class="mono">fos_agent_events</span>, <span class="mono">fos_deal_health_history</span></td>
+          <td>1-3s</td>
+        </tr>
+        <tr>
+          <td><strong>NBA</strong></td>
+          <td>Advisor</td>
+          <td>Event Hubs + on-demand</td>
+          <td><span class="tag tag-decided">Yes</span> Cortex</td>
+          <td><span class="mono">fos_next_best_actions</span></td>
+          <td>2-4s</td>
+        </tr>
+        <tr>
+          <td><strong>Playbook</strong></td>
+          <td>Strategist</td>
+          <td>Stage change event</td>
+          <td><span class="tag tag-decided">Yes</span> Cortex</td>
+          <td><span class="mono">fos_playbooks</span></td>
+          <td>10-18s</td>
+        </tr>
+        <tr>
+          <td><strong>RAG</strong></td>
+          <td>Researcher</td>
+          <td>Called by NBA / Playbook</td>
+          <td><span class="tag tag-info">No</span></td>
+          <td>Returns results in-process</td>
+          <td>200-500ms</td>
+        </tr>
+        <tr>
+          <td><strong>Feedback</strong></td>
+          <td>Observer</td>
+          <td>User interaction (Slack / Web)</td>
+          <td><span class="tag tag-info">No</span></td>
+          <td><span class="mono">fos_feedback_log</span></td>
+          <td>&lt;200ms</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 3: Tool Inventory -->
+  <div class="section" id="section-3">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <h2 class="section-title">Tool Inventory</h2>
+    </div>
+    <div class="purpose-block">
+      Every tool is a Python function imported and called directly inside LangGraph nodes. Tools interact with Snowflake, Cortex, and Azure Event Hubs on behalf of agents.
+    </div>
+
+    <div class="callout callout-decided">
+      <strong>Decided:</strong> All tools are plain Python functions. No LangChain tool wrappers, no schema decorators. Each function takes explicit parameters and returns results. This keeps the codebase simple and avoids unnecessary abstraction.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>What It Does</th>
+          <th>Used By</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="mono">query_semantic_view</span></td>
+          <td>Executes a query against a Semantic layer view via Snowpark SDK. Returns rows as a list of dicts.</td>
+          <td>Detection, NBA, Playbook, RAG</td>
+        </tr>
+        <tr>
+          <td><span class="mono">call_cortex_llm</span></td>
+          <td>Calls Snowflake Cortex LLM for text generation. Takes prompt, temperature, max_tokens. Returns generated text.</td>
+          <td>NBA, Playbook</td>
+        </tr>
+        <tr>
+          <td><span class="mono">search_cortex</span></td>
+          <td>Calls Cortex Search for vector similarity retrieval. Takes query string and optional metadata filters. Returns ranked content chunks.</td>
+          <td>RAG (called by NBA, Playbook)</td>
+        </tr>
+        <tr>
+          <td><span class="mono">write_hybrid_table</span></td>
+          <td>Inserts or updates a row in a Hybrid Table via Snowpark SDK. Takes table name, column dict, operation type.</td>
+          <td>Detection, NBA, Playbook, Feedback</td>
+        </tr>
+        <tr>
+          <td><span class="mono">publish_event_hubs</span></td>
+          <td>Publishes a JSON message to an Azure Event Hubs topic. Returns delivery confirmation.</td>
+          <td>Detection, NBA, Playbook</td>
+        </tr>
+        <tr>
+          <td><span class="mono">consume_event_hubs</span></td>
+          <td>Receives messages from an Event Hubs consumer group. Takes topic name and batch size. Returns list of event messages.</td>
+          <td>NBA, Playbook</td>
+        </tr>
+        <tr>
+          <td><span class="mono">log_agent_run</span></td>
+          <td>Writes execution metadata to <span class="mono">fos_agent_runs</span>: agent name, timestamps, status, error details, node trace.</td>
+          <td>All agents</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4: Execution Pattern -->
+  <div class="section" id="section-4">
+    <div class="section-header">
+      <span class="section-number">4</span>
+      <h2 class="section-title">Execution Pattern</h2>
+    </div>
+    <div class="purpose-block">
+      Every agent follows the same graph execution pattern. The graph is compiled once at startup. Each invocation creates a new state, executes nodes in sequence, and checkpoints after every step.
+    </div>
+
+    <div class="flow">
+      <div class="flow-box agent">
+        <strong>Receive Request</strong>
+        <small>HTTP or Event Hubs</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box snowflake">
+        <strong>Fetch Context</strong>
+        <small>Semantic views</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box snowflake">
+        <strong>Check History</strong>
+        <small>Cooldown list</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box gold">
+        <strong>Generate</strong>
+        <small>Cortex LLM</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box">
+        <strong>Rank / Filter</strong>
+        <small>In-memory scoring</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box snowflake">
+        <strong>Write Results</strong>
+        <small>Hybrid Tables</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box azure">
+        <strong>Publish Event</strong>
+        <small>Event Hubs</small>
+      </div>
+    </div>
+
+    <div class="callout callout-decided">
+      <strong>Decided:</strong> Checkpoint saved after each step via <span class="mono">langgraph-checkpoint-snowflake</span>. If any node fails, the agent resumes from the last successful checkpoint without re-executing earlier steps. The most expensive step (LLM call) is never unnecessarily repeated.
+    </div>
+
+    <div class="flow-note">
+      <strong>State lifecycle:</strong> PENDING -> FETCHING_CONTEXT -> GENERATING -> RANKING -> WRITING -> COMPLETE (or FAILED at any step)
+    </div>
+  </div>
+
+  <!-- SECTION 5: Error Handling -->
+  <div class="section" id="section-5">
+    <div class="section-header">
+      <span class="section-number">5</span>
+      <h2 class="section-title">Error Handling</h2>
+    </div>
+    <div class="purpose-block">
+      All tools follow the same error handling convention: transient failures raise <span class="mono">RetryableError</span> (retried with backoff), permanent failures raise <span class="mono">PermanentError</span> (logged and skipped or marked FAILED).
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">Retry Pattern</div>
+        <div class="card-desc">
+          <strong>Max retries:</strong> 3<br>
+          <strong>Backoff:</strong> Exponential: 2s, 4s, 8s<br>
+          <strong>Jitter:</strong> Random 0-1s added to each backoff<br>
+          <strong>Scope:</strong> Node-level, not graph-level. Only the failing node is retried, not the entire graph.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">LLM Timeout</div>
+        <div class="card-desc">
+          <strong>Timeout:</strong> 30 seconds per Cortex call<br>
+          <strong>Recovery:</strong> Retry up to 3x with exponential backoff<br>
+          <strong>If all retries fail:</strong> Mark event as FAILED in <span class="mono">fos_agent_events</span>. Checkpoint preserved at pre-LLM node for manual retry.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cortex Search Down</div>
+        <div class="card-desc">
+          <strong>Impact:</strong> No RAG content available for NBA or Playbook generation<br>
+          <strong>Recovery:</strong> Skip RAG content entirely. Proceed with LLM generation using deal context only.<br>
+          <strong>Result:</strong> Functional but degraded. Recommendations lack battle card and competitive intel context.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Hybrid Table Write Fails</div>
+        <div class="card-desc">
+          <strong>Impact:</strong> Recommendations generated but not persisted<br>
+          <strong>Recovery:</strong> Resume from checkpoint. State contains the generated results. Retry skips LLM regeneration and goes straight to write.<br>
+          <strong>Transactions:</strong> ACID rollback on partial writes.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: State Management -->
+  <div class="section" id="section-6">
+    <div class="section-header">
+      <span class="section-number">6</span>
+      <h2 class="section-title">State Management</h2>
+    </div>
+    <div class="purpose-block">
+      Agent state is persisted to Snowflake after every graph node using the <span class="mono">langgraph-checkpoint-snowflake</span> package. This replaces the default PostgreSQL or SQLite checkpoint backends with native Snowflake storage.
+    </div>
+
+    <div class="callout callout-decided">
+      <strong>Decided:</strong> <span class="mono">langgraph-checkpoint-snowflake</span> for all state persistence. Each checkpoint is keyed by <span class="mono">thread_id</span> (unique per agent run, format: <span class="mono">{agent}_{opp_id}_{ts}</span>) + <span class="mono">checkpoint_ts</span> (timestamp). State is serialized to JSON and stored as a VARIANT column. No PostgreSQL anywhere in the stack.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Policy</th>
+          <th>Retention</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Active checkpoints</strong></td>
+          <td>7 days</td>
+          <td>Supports conversation continuity for Slack threads and debugging of in-progress runs</td>
+        </tr>
+        <tr>
+          <td><strong>Completed runs</strong></td>
+          <td>30 days</td>
+          <td>Final checkpoint retained for audit. Intermediate checkpoints pruned after 7 days.</td>
+        </tr>
+        <tr>
+          <td><strong>Failed runs</strong></td>
+          <td>14 days</td>
+          <td>Retained for investigation. Includes full state at failure point and error details.</td>
+        </tr>
+        <tr>
+          <td><strong>Cleanup mechanism</strong></td>
+          <td>Daily</td>
+          <td>Snowflake Task runs daily to delete expired checkpoints based on TTL policies</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="flow-note">
+      <strong>Estimated volume:</strong> Each checkpoint is 10-200 KB. At 500 agent runs/day with 5 checkpoints each, approximately 250-500 MB/month before cleanup.
+    </div>
+  </div>
+
+  <!-- SECTION 7: Monitoring -->
+  <div class="section" id="section-7">
+    <div class="section-header">
+      <span class="section-number">7</span>
+      <h2 class="section-title">Monitoring</h2>
+    </div>
+    <div class="purpose-block">
+      LangSmith provides end-to-end tracing for every agent execution: nodes, tool calls, LLM prompts and responses, latency, token counts, errors. Traces are tagged with agent name, opportunity ID, event type, and run ID.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Source</th>
+          <th>Alert Threshold</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Agent execution time</strong> (end-to-end)</td>
+          <td><span class="mono">fos_agent_runs</span></td>
+          <td>&gt;10 seconds</td>
+        </tr>
+        <tr>
+          <td><strong>LLM inference time</strong></td>
+          <td>LangSmith trace</td>
+          <td>&gt;5 seconds</td>
+        </tr>
+        <tr>
+          <td><strong>Agent failure rate</strong></td>
+          <td><span class="mono">fos_agent_runs</span> (status = FAILED)</td>
+          <td>&gt;2% of runs</td>
+        </tr>
+        <tr>
+          <td><strong>LLM parse failure rate</strong></td>
+          <td><span class="mono">fos_agent_runs</span></td>
+          <td>&gt;5%</td>
+        </tr>
+        <tr>
+          <td><strong>Recommendation acceptance rate</strong></td>
+          <td><span class="mono">fos_feedback_log</span></td>
+          <td>&lt;30% thumbs up</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 8: Open Questions -->
+  <div class="section" id="section-8">
+    <div class="section-header">
+      <span class="section-number">8</span>
+      <h2 class="section-title">Open Questions</h2>
+    </div>
+    <div class="purpose-block">
+      Several architecture decisions remain unresolved. These items block downstream work including prompt engineering, capacity planning, and integration testing.
+    </div>
+
+    <div class="callout callout-open">
+      <strong>Open:</strong> Cortex LLM model selection (Claude vs Mistral Large vs Llama 3) is not finalized. This blocks prompt engineering, cost estimation, and output quality benchmarking. The architecture supports switching models without code changes (model name is a config parameter), but prompt templates may need tuning per model.
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">SPCS Scaling Limits <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          Need to confirm max replicas, auto-scale trigger mechanisms, and cold start behavior for SPCS compute pools. Documentation is sparse. Affects capacity planning and SLA commitments.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cortex Rate Limits <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          Need to understand tokens-per-minute and requests-per-minute limits for the chosen model. Affects how many deals can be processed per detection cycle. Blocks capacity planning.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">SPCS Outbound Networking <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          SPCS may restrict outbound HTTPS access. Need to verify external access list configuration for Azure Event Hubs and LangSmith connectivity. Blocks Event Hubs integration.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cortex Search Index Limits <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          Need to understand how much RAG content (battle cards, win/loss reports) can be indexed. Affects content ingestion pipeline design. Content volume is small for MVP.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">This is one of seven architecture deep dives for the Future of Sales project.</div>
+  <div class="footer-links">
+    <a class="footer-link" href="../01-data-extraction/deep-dive.html">01 Data Extraction</a>
+    <a class="footer-link" href="../02-medallion/deep-dive.html">02 Medallion</a>
+    <a class="footer-link" href="../03-semantic-layer/deep-dive.html">03 Semantic Layer</a>
+    <a class="footer-link" href="../04-rag-pipeline/deep-dive.html">04 RAG Pipeline</a>
+    <a class="footer-link" href="../05-application-layer/deep-dive.html">05 Application</a>
+    <a class="footer-link current" href="#">06 Agent Runtime</a>
+    <a class="footer-link" href="../07-data-flows/deep-dive.html">07 Data Flows</a>
+  </div>
+</div>
+
+<!-- SCROLL SPY -->
+<script>
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.side-nav a');
+window.addEventListener('scroll', function() {
+  let current = '';
+  sections.forEach(function(section) {
+    const sectionTop = section.offsetTop - 100;
+    if (window.scrollY >= sectionTop) current = section.getAttribute('id');
+  });
+  navLinks.forEach(function(link) {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

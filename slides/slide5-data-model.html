@@ -1,0 +1,299 @@
+<div class="slide slide-light slide-scroll" id="slide-5">
+  <div class="slide-inner">
+    <div class="slide-badge-outline">Data Model</div>
+    <div class="slide-title">108 objects. <span class="highlight-text">Four tiers.</span></div>
+    <div class="slide-subtitle">
+      Click any tier to see every table, view, and domain inside it.
+    </div>
+
+    <div class="schema-grid">
+
+      <!-- Bronze -->
+      <div class="schema-card" onclick="openOverlay('overlay-bronze')">
+        <div class="schema-count">35</div>
+        <div class="schema-tier">Bronze</div>
+        <div class="schema-desc">Raw data. Exactly as it arrives from Salesforce, Gong, and the FOS backend.</div>
+        <div class="schema-hint">Click to see tables</div>
+      </div>
+
+      <!-- Silver -->
+      <div class="schema-card" onclick="openOverlay('overlay-silver')">
+        <div class="schema-count">35</div>
+        <div class="schema-tier">Silver</div>
+        <div class="schema-desc">Cleaned, standardized, deduped. Computed fields added. 1:1 with Bronze.</div>
+        <div class="schema-hint">Click to see transforms</div>
+      </div>
+
+      <!-- Gold -->
+      <div class="schema-card" onclick="openOverlay('overlay-gold')">
+        <div class="schema-count">27</div>
+        <div class="schema-tier">Gold</div>
+        <div class="schema-desc">Business logic. Health scoring, risk detection, MEDDPICC, stakeholders, velocity.</div>
+        <div class="schema-hint">Click to see domains</div>
+      </div>
+
+      <!-- Semantic -->
+      <div class="schema-card" onclick="openOverlay('overlay-semantic-detail')">
+        <div class="schema-count">11</div>
+        <div class="schema-tier">Semantic</div>
+        <div class="schema-desc">AI-ready views. Business-friendly names. Agents query only this layer.</div>
+        <div class="schema-hint">Click to see views</div>
+      </div>
+    </div>
+
+    <!-- Key Join Paths -->
+    <div class="join-paths">
+      <div class="mock-section-title" style="margin-bottom: 10px;">Key Join Paths</div>
+      <div class="join-row">
+        <span class="join-from">Opportunity</span>
+        <span class="join-arrow-sm">&rarr;</span>
+        <span class="join-to">Account</span>
+        <span class="join-via">via account_id (many-to-one)</span>
+      </div>
+      <div class="join-row">
+        <span class="join-from">Opportunity</span>
+        <span class="join-arrow-sm">&rarr;</span>
+        <span class="join-to">Contact</span>
+        <span class="join-via">via OpportunityContactRole (many-to-many)</span>
+      </div>
+      <div class="join-row">
+        <span class="join-from">Opportunity</span>
+        <span class="join-arrow-sm">&rarr;</span>
+        <span class="join-to">Gong Calls</span>
+        <span class="join-via">via conversation_contexts.object_id (many-to-many)</span>
+      </div>
+      <div class="join-row">
+        <span class="join-from">Gong Users</span>
+        <span class="join-arrow-sm">&rarr;</span>
+        <span class="join-to">SFDC Users</span>
+        <span class="join-via">via user_crm_ids bridge table (one-to-one)</span>
+      </div>
+      <div class="join-row">
+        <span class="join-from">Task / Event</span>
+        <span class="join-arrow-sm">&rarr;</span>
+        <span class="join-to">Opportunity</span>
+        <span class="join-via">via what_id (many-to-one)</span>
+      </div>
+      <div class="join-row">
+        <span class="join-from">NBA / Playbook</span>
+        <span class="join-arrow-sm">&rarr;</span>
+        <span class="join-to">Opportunity</span>
+        <span class="join-via">via opportunity_id (many-to-one)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: Bronze =================== -->
+<div class="overlay" id="overlay-bronze">
+  <div class="overlay-content overlay-wide">
+    <button class="overlay-close" onclick="closeOverlay('overlay-bronze')">&times;</button>
+    <div class="overlay-badge">Bronze Schema</div>
+    <div class="overlay-title">35 Tables: Raw Data Landing Zone</div>
+
+    <div class="obj-group">
+      <div class="obj-group-header">
+        Salesforce <span class="obj-group-count">9 objects</span>
+      </div>
+      <table class="obj-table">
+        <thead><tr><th>Table</th><th>Key Fields</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Account</td><td>id, industry, annual_revenue</td><td>Company records</td></tr>
+          <tr><td>Contact</td><td>id, account_id, title, email</td><td>People at customer companies</td></tr>
+          <tr><td>Opportunity</td><td>id, account_id, stage_name, amount, 28 MEDDPICC fields</td><td>Every deal in the pipeline</td></tr>
+          <tr><td>Task</td><td>id, what_id, who_id, subject, activity_date</td><td>Logged activities: calls, emails</td></tr>
+          <tr><td>Event</td><td>id, what_id, who_id, activity_date_time</td><td>Calendar events: meetings, demos</td></tr>
+          <tr><td>User</td><td>id, name, email, role, manager_id</td><td>Salesforce users (AEs, managers)</td></tr>
+          <tr><td>OpportunityContactRole</td><td>opportunity_id, contact_id, role</td><td>Links contacts to opportunities</td></tr>
+          <tr><td>OpportunityFieldHistory</td><td>opportunity_id, field, old_value, new_value</td><td>Audit trail for stage changes</td></tr>
+          <tr><td>OpportunityLineItem</td><td>opportunity_id, product_id, total_price</td><td>Products on deals</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="obj-group">
+      <div class="obj-group-header">
+        Gong <span class="obj-group-count">16 objects</span>
+      </div>
+      <table class="obj-table">
+        <thead><tr><th>Table</th><th>Key Fields</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>conversations</td><td>conversation_key, type, started</td><td>Parent record for all interactions</td></tr>
+          <tr><td>calls</td><td>conversation_key, duration, spotlight_brief</td><td>Call metadata plus Gong Spotlight AI summaries</td></tr>
+          <tr><td>call_recordings</td><td>conversation_key, duration, language</td><td>Recording metadata</td></tr>
+          <tr><td>call_transcripts</td><td>conversation_key, speaker_id, text</td><td>Full transcripts for competitor detection</td></tr>
+          <tr><td>users</td><td>user_id, email, valid_from, valid_to</td><td>Gong users (SCD Type 2)</td></tr>
+          <tr><td>user_crm_ids</td><td>user_id, crm_user_id</td><td>Bridge to Salesforce users</td></tr>
+          <tr><td>conversation_contexts</td><td>conversation_key, object_id, object_type</td><td>Maps calls to CRM objects (critical join)</td></tr>
+          <tr><td>conversation_participants</td><td>conversation_key, speaker_id, email</td><td>People on each call</td></tr>
+          <tr><td>interaction_stats</td><td>conversation_key, talk_ratio, question_rate</td><td>Per-call engagement metrics</td></tr>
+          <tr><td>trackers</td><td>tracker_id, tracker_name, keywords</td><td>Topic detection definitions</td></tr>
+          <tr><td>conversation_trackers</td><td>conversation_key, tracker_id, count</td><td>Which trackers fired on which calls</td></tr>
+          <tr><td>emails</td><td>conversation_key, direction, sent_at</td><td>Email metadata from Gong</td></tr>
+          <tr><td>meetings</td><td>conversation_key, title, participants</td><td>Calendar meeting metadata</td></tr>
+          <tr><td>comments</td><td>conversation_key, text, tags</td><td>Team comments on recordings</td></tr>
+          <tr><td>workspaces</td><td>workspace_id, name</td><td>Business unit filtering</td></tr>
+          <tr><td>deal_likelihood_scores</td><td>opportunity_id, score, category</td><td>Gong AI deal scoring (1-99)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="obj-group">
+      <div class="obj-group-header">
+        FOS Backend (via CDC) <span class="obj-group-count">10 tables</span>
+      </div>
+      <table class="obj-table">
+        <thead><tr><th>Table</th><th>Written By</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>fos_next_best_actions</td><td>NBA Agent</td><td>AI-generated ranked recommendations</td></tr>
+          <tr><td>fos_playbooks</td><td>Playbook Agent</td><td>11-section deal strategy guides</td></tr>
+          <tr><td>fos_deal_health_history</td><td>Detection Agent</td><td>Daily health score snapshots and trends</td></tr>
+          <tr><td>fos_agent_events</td><td>Detection Agent</td><td>Event queue coordinating agent work</td></tr>
+          <tr><td>fos_sales_content</td><td>Content pipeline</td><td>Battle cards, case studies metadata</td></tr>
+          <tr><td>fos_content_chunks</td><td>Embedding pipeline</td><td>Chunked content with vectors for RAG</td></tr>
+          <tr><td>fos_generated_content</td><td>NBA/Playbook Agent</td><td>AI-drafted emails, proposals</td></tr>
+          <tr><td>fos_user_preferences</td><td>Application</td><td>Notification settings per user</td></tr>
+          <tr><td>fos_feedback_log</td><td>Users</td><td>Thumbs up/down, ratings, outcome tracking</td></tr>
+          <tr><td>fos_audit_log</td><td>All agents</td><td>Compliance and traceability</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: Silver =================== -->
+<div class="overlay" id="overlay-silver">
+  <div class="overlay-content overlay-wide">
+    <button class="overlay-close" onclick="closeOverlay('overlay-silver')">&times;</button>
+    <div class="overlay-badge">Silver Schema</div>
+    <div class="overlay-title">35 Models: Clean, Standardize, Enrich</div>
+
+    <div class="obj-group">
+      <div class="obj-group-header">Standard Transformations (All Models)</div>
+      <table class="obj-table">
+        <thead><tr><th>Rule</th><th>What Happens</th></tr></thead>
+        <tbody>
+          <tr><td>Column naming</td><td>CamelCase (Salesforce) and mixed case normalized to snake_case</td></tr>
+          <tr><td>Null handling</td><td>Numeric nulls default to 0. Booleans to FALSE. Empty strings to NULL. Dates left as NULL.</td></tr>
+          <tr><td>Soft delete filter</td><td>Records with _fivetran_deleted = TRUE or is_deleted = TRUE are excluded</td></tr>
+          <tr><td>Deduplication</td><td>Duplicates from Fivetran resyncs resolved using _fivetran_synced as tie-breaker</td></tr>
+          <tr><td>SCD Type 2</td><td>Gong users: current record has valid_to = NULL. Historical records preserved.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="obj-group">
+      <div class="obj-group-header">Computed Fields Added in Silver</div>
+      <table class="obj-table">
+        <thead><tr><th>Field</th><th>Formula</th><th>Applied To</th></tr></thead>
+        <tbody>
+          <tr><td>is_overdue</td><td>TRUE if close_date is past and deal is still open</td><td>Opportunity</td></tr>
+          <tr><td>days_since_last_activity</td><td>Today minus most recent activity date</td><td>Opportunity</td></tr>
+          <tr><td>days_in_current_stage</td><td>Today minus date of most recent stage change</td><td>Opportunity</td></tr>
+          <tr><td>activity_status</td><td>Active (0-7d), Moderate (8-14d), Low (15-30d), Stale (30+d)</td><td>Opportunity</td></tr>
+          <tr><td>deal_size_category</td><td>Small (&lt;10K), Medium (10-50K), Large (50-200K), Enterprise (200K+)</td><td>Opportunity</td></tr>
+          <tr><td>meddpicc_health_rating</td><td>Strong (75-100%), Moderate (50-74%), Weak (25-49%), Poor (&lt;25%)</td><td>Opportunity</td></tr>
+          <tr><td>engagement_score</td><td>Composite: interactivity 40%, monologue 20%, patience 20%, questions 20%</td><td>Interaction Stats</td></tr>
+          <tr><td>call_duration_minutes</td><td>Raw seconds divided by 60</td><td>Calls</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: Gold =================== -->
+<div class="overlay" id="overlay-gold">
+  <div class="overlay-content overlay-wide">
+    <button class="overlay-close" onclick="closeOverlay('overlay-gold')">&times;</button>
+    <div class="overlay-badge">Gold Schema</div>
+    <div class="overlay-title">27 Views Across 6 Domains</div>
+
+    <div class="domain-section">
+      <div class="domain-label">Domain 1: Deal Health and Scoring <span class="domain-count">4 views</span></div>
+      <ul class="domain-views">
+        <li><strong>v_opportunity_health_current</strong> - AHP-weighted composite score (0-100) from 5 components</li>
+        <li><strong>v_opportunity_meddicc_breakdown</strong> - All 8 MEDDPICC components scored 0-3, gaps identified</li>
+        <li><strong>v_opportunity_stage_velocity</strong> - Days in stage vs. benchmarks, velocity status</li>
+        <li><strong>v_deal_risk_indicators</strong> - 20+ risk signals aggregated into weighted risk score</li>
+      </ul>
+    </div>
+
+    <div class="domain-section">
+      <div class="domain-label">Domain 2: Stakeholders and Engagement <span class="domain-count">8 views</span></div>
+      <ul class="domain-views">
+        <li><strong>v_opportunity_stakeholders_enriched</strong> - Contact roles, interaction history, engagement level</li>
+        <li><strong>v_opportunity_activities_rollup</strong> - Activity counts, 7d/30d trends, velocity</li>
+        <li><strong>v_contact_interaction_history</strong> - Per-contact engagement timeline</li>
+        <li><strong>v_next_contact_recommendation</strong> - Contacts ranked by outreach priority</li>
+        <li>Plus 4 simplified variants for performance-sensitive queries</li>
+      </ul>
+    </div>
+
+    <div class="domain-section">
+      <div class="domain-label">Domain 3: Gong Intelligence <span class="domain-count">3 views</span></div>
+      <ul class="domain-views">
+        <li><strong>v_opportunity_gong_calls_summary</strong> - Call aggregates, Spotlight summaries, quality scores</li>
+        <li><strong>v_opportunity_competitor_intelligence</strong> - Competitor mentions from Gong tracker data</li>
+        <li><strong>v_gong_coverage_gaps</strong> - Deals with no calls, no transcripts, or stale coverage</li>
+      </ul>
+    </div>
+
+    <div class="domain-section">
+      <div class="domain-label">Domain 4: Data Quality <span class="domain-count">3 views</span></div>
+      <ul class="domain-views">
+        <li><strong>v_meddicc_quality_dashboard</strong> - MEDDPICC fill rates, coaching priority by stage and deal size</li>
+        <li><strong>v_data_completeness_score</strong> - Quality score (0-100), agent confidence level</li>
+        <li><strong>v_stale_deals_detection</strong> - Stage-specific staleness thresholds and severity</li>
+      </ul>
+    </div>
+
+    <div class="domain-section">
+      <div class="domain-label">Domain 5: AI Agent Operations <span class="domain-count">6 views</span></div>
+      <ul class="domain-views">
+        <li><strong>v_opportunity_llm_context</strong> - Complete deal context in one query, under 500ms</li>
+        <li><strong>v_active_recommendations</strong> - Currently active NBAs with opportunity context</li>
+        <li><strong>v_playbook_library</strong> - Generated playbooks with ratings and usage</li>
+        <li><strong>v_agent_trigger_queue</strong> - Pending events with priority scoring and dedup</li>
+        <li><strong>v_agent_recommendation_history</strong> - Past recommendations for cooldown and dedup</li>
+        <li><strong>v_rag_content_catalog</strong> - Content metadata for Stage 1 RAG filtering</li>
+      </ul>
+    </div>
+
+    <div class="domain-section">
+      <div class="domain-label">Domain 6: Performance Benchmarking <span class="domain-count">2 views</span></div>
+      <ul class="domain-views">
+        <li><strong>v_rep_performance_benchmarks</strong> - Win rate, deal size, velocity, MEDDPICC avg per rep</li>
+        <li><strong>v_team_activity_benchmarks</strong> - Team-level activity baselines by role</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: Semantic =================== -->
+<div class="overlay" id="overlay-semantic-detail">
+  <div class="overlay-content overlay-wide">
+    <button class="overlay-close" onclick="closeOverlay('overlay-semantic-detail')">&times;</button>
+    <div class="overlay-badge">Semantic Schema</div>
+    <div class="overlay-title">11 AI-Ready Views</div>
+    <div class="overlay-scenario">
+      <strong>Architecture rule:</strong> AI agents query Semantic views only. They never access Gold, Silver, or Bronze directly. Semantic views use business-friendly names, flatten complex structures, and create a clean contract between data and AI teams.
+    </div>
+
+    <table class="obj-table">
+      <thead><tr><th>Semantic View</th><th>Source</th><th>Agent Consumer</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td>v_opportunity_health_current</td><td>Gold health view</td><td>Detection, NBA</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_opportunity_meddicc_breakdown</td><td>Gold MEDDPICC view</td><td>NBA, Playbook</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_opportunity_stage_velocity</td><td>Gold velocity view</td><td>Detection</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_deal_risk_indicators</td><td>Gold risk view</td><td>Detection, NBA</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_next_contact_recommendation</td><td>Gold contact view</td><td>NBA</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_meddicc_quality_dashboard</td><td>Gold quality view</td><td>NBA, Dashboard</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_data_completeness_score</td><td>Gold completeness view</td><td>All agents</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_opportunity_llm_context</td><td>Multiple Gold views</td><td>NBA, Playbook, RAG</td><td>&lt; 500ms</td></tr>
+        <tr><td>v_agent_trigger_queue</td><td>Gold queue view</td><td>Detection</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_agent_recommendation_history</td><td>Gold history view</td><td>NBA (dedup)</td><td>&lt; 200ms</td></tr>
+        <tr><td>v_rag_content_catalog</td><td>Gold content view</td><td>RAG</td><td>&lt; 200ms</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,80 @@
+<div class="slide slide-scroll slide-light" id="slide-9">
+  <div class="slide-inner">
+    <div class="section-badge">ARCHITECTURE DEEP DIVES</div>
+    <h1 class="slide-title" style="margin-bottom:6px;">Deep Dives</h1>
+    <p style="color:#747480;font-size:14px;margin-bottom:28px;">7 architecture topics explored in detail. Click any card to open the full deep dive in a new tab.</p>
+
+    <div class="dd-hub-grid">
+      <a class="dd-hub-card" href="deep-dives/01-data-extraction/deep-dive.html" target="_blank" style="border-left:4px solid #FFE600;text-decoration:none;color:inherit;">
+        <div class="dd-hub-number">01</div>
+        <div class="dd-hub-title">Data Extraction Pipeline</div>
+        <div class="dd-hub-desc">How data enters Snowflake from Salesforce, Gong, and Guru. 3 ingestion paths, 35 Bronze tables, worst-case latency 75-90 min.</div>
+        <div style="margin-top:8px;">
+          <span class="dd-tag dd-tag-decided">SFDC Decided</span>
+          <span class="dd-tag dd-tag-tbd">Gong TBD</span>
+          <span class="dd-tag dd-tag-tbd">Guru TBD</span>
+        </div>
+      </a>
+
+      <a class="dd-hub-card" href="deep-dives/02-medallion/deep-dive.html" target="_blank" style="border-left:4px solid #29B5E8;text-decoration:none;color:inherit;">
+        <div class="dd-hub-number">02</div>
+        <div class="dd-hub-title">Medallion Architecture</div>
+        <div class="dd-hub-desc">Bronze to Silver to Gold to Semantic. 108 total objects across 4 tiers. All Snowflake Dynamic Tables, no dbt.</div>
+        <div style="margin-top:8px;">
+          <span class="dd-tag dd-tag-decided">Dynamic Tables</span>
+          <span class="dd-tag dd-tag-decided">6 Gold Domains</span>
+        </div>
+      </a>
+
+      <a class="dd-hub-card" href="deep-dives/03-semantic-layer/deep-dive.html" target="_blank" style="border-left:4px solid #6A1B9A;text-decoration:none;color:inherit;">
+        <div class="dd-hub-number">03</div>
+        <div class="dd-hub-title">Semantic Layer</div>
+        <div class="dd-hub-desc">11 SQL views that agents query. v_opportunity_llm_context is the cornerstone: 64 columns, under 500ms, one row per deal.</div>
+        <div style="margin-top:8px;">
+          <span class="dd-tag dd-tag-decided">11 Views</span>
+          <span class="dd-tag dd-tag-tbd">6 Need SQL</span>
+        </div>
+      </a>
+
+      <a class="dd-hub-card" href="deep-dives/04-rag-pipeline/deep-dive.html" target="_blank" style="border-left:4px solid #E65100;text-decoration:none;color:inherit;">
+        <div class="dd-hub-number">04</div>
+        <div class="dd-hub-title">RAG and Content Pipeline</div>
+        <div class="dd-hub-desc">Separate from medallion. Unstructured knowledge from Guru to Cortex Search. Two-stage retrieval: SQL filter then vector similarity.</div>
+        <div style="margin-top:8px;">
+          <span class="dd-tag dd-tag-risk">17 Unknowns</span>
+          <span class="dd-tag dd-tag-risk">Guru API Blocker</span>
+        </div>
+      </a>
+
+      <a class="dd-hub-card" href="deep-dives/05-application-layer/deep-dive.html" target="_blank" style="border-left:4px solid #2E7D32;text-decoration:none;color:inherit;">
+        <div class="dd-hub-number">05</div>
+        <div class="dd-hub-title">Application Layer</div>
+        <div class="dd-hub-desc">FastAPI on SPCS, Slack Bot on Azure, Event Hubs for pub/sub. 9 API endpoints, 4 Event Hubs topics, 3 request flows.</div>
+        <div style="margin-top:8px;">
+          <span class="dd-tag dd-tag-tbd">Auth TBD</span>
+          <span class="dd-tag dd-tag-risk">Bridge Fragile</span>
+        </div>
+      </a>
+
+      <a class="dd-hub-card" href="deep-dives/06-agent-runtime/deep-dive.html" target="_blank" style="border-left:4px solid #FF6B00;text-decoration:none;color:inherit;">
+        <div class="dd-hub-number">06</div>
+        <div class="dd-hub-title">Agent Runtime</div>
+        <div class="dd-hub-desc">5 LangGraph agents in one SPCS container. 7 tools, checkpoint-based state, node-level retry, graceful degradation.</div>
+        <div style="margin-top:8px;">
+          <span class="dd-tag dd-tag-tbd">LLM Model TBD</span>
+          <span class="dd-tag dd-tag-tbd">SPCS Limits TBD</span>
+        </div>
+      </a>
+
+      <a class="dd-hub-card" href="deep-dives/07-data-flows/deep-dive.html" target="_blank" style="border-left:4px solid #1565C0;text-decoration:none;color:inherit;">
+        <div class="dd-hub-number">07</div>
+        <div class="dd-hub-title">Data Flows by Scenario</div>
+        <div class="dd-hub-desc">5 real scenarios traced hop by hop. Stalled deal (85 min), meeting prep (6 sec), stage change, SE handoff, manager dashboard (500ms).</div>
+        <div style="margin-top:8px;">
+          <span class="dd-tag dd-tag-decided">5 Flows Traced</span>
+          <span class="dd-tag dd-tag-decided">5 Invariants</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>

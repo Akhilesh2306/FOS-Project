@@ -1,0 +1,176 @@
+<div class="slide slide-light slide-scroll" id="slide-8">
+  <div class="slide-inner">
+    <div class="slide-badge">Status</div>
+    <div class="slide-title">What exists. <span class="highlight-text">What we build.</span></div>
+    <div class="slide-subtitle">
+      The data model and business logic are designed. The infrastructure and application code are net new.
+    </div>
+
+    <div class="status-columns">
+      <!-- Exists -->
+      <div class="status-col status-exists">
+        <div class="status-col-header">Designed and Validated</div>
+        <div class="status-col-body">
+          <div class="status-item">
+            <span class="status-check">&#10003;</span>
+            <div class="status-item-text">
+              Complete data model: 108 objects
+              <div class="status-item-sub">35 Bronze + 35 Silver + 27 Gold + 11 Semantic</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">&#10003;</span>
+            <div class="status-item-text">
+              All business logic and scoring formulas
+              <div class="status-item-sub">AHP health scoring, MEDDPICC (8 components), risk indicators, staleness thresholds, velocity benchmarks</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">&#10003;</span>
+            <div class="status-item-text">
+              Architecture decisions documented
+              <div class="status-item-sub">Tech stack, agent design, data flow, event queue pattern, RAG pipeline</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">&#10003;</span>
+            <div class="status-item-text">
+              Column mappings and join paths
+              <div class="status-item-sub">Every source field mapped through Bronze, Silver, Gold, and Semantic</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">&#10003;</span>
+            <div class="status-item-text">
+              Local prototype (Dremio)
+              <div class="status-item-sub">Views validated with sample data. Same logic migrates to Snowflake.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">&#10003;</span>
+            <div class="status-item-text">
+              Customer journeys and mock screens
+              <div class="status-item-sub">Proactive alerts, meeting prep, manager dashboard, deal playbooks</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Build -->
+      <div class="status-col status-build">
+        <div class="status-col-header">Needs to Be Built</div>
+        <div class="status-col-body">
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Snowflake account setup
+              <div class="status-item-sub">FOS_PROD database, schemas (Bronze, Silver, Gold, Semantic), warehouse, roles</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Data ingestion connectors
+              <div class="status-item-sub">OpenFlow for Salesforce (9 objects). Gong connector TBD (exploring options, Fivetran as fallback). Validate MEDDPICC custom field names.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Dynamic Tables (Silver + Gold)
+              <div class="status-item-sub">35 Silver + 27 Gold as Snowflake Dynamic Tables. Auto-refresh on upstream change. No dbt needed.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              All 5 LangGraph agents on SPCS
+              <div class="status-item-sub">Detection, NBA, Playbook, RAG, Feedback. FastAPI + LangGraph in Snowpark Container Services. No agent code exists today.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Agent state and operational data
+              <div class="status-item-sub">langgraph-checkpoint-snowflake for agent state. Hybrid Tables for events, NBAs, playbooks, feedback.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Azure Event Hubs
+              <div class="status-item-sub">Pub/sub event streaming for real-time agent triggering alongside Snowflake Tasks for scheduled polling.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Slack bot
+              <div class="status-item-sub">Commands, proactive DMs, feedback buttons. No code exists.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Web Dashboard
+              <div class="status-item-sub">AE view (recommendations, health) + Manager view (pipeline, coaching). Full web application.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Streamlit test harness
+              <div class="status-item-sub">Separate validation app to test NBA, playbook, and health scoring during development.</div>
+            </div>
+          </div>
+          <div class="status-item">
+            <span class="status-check">!</span>
+            <div class="status-item-text">
+              Content pipeline and monitoring
+              <div class="status-item-sub">Guru ingestion, embedding pipeline, LangSmith, Prometheus</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Streamlit note -->
+    <div class="feature-note" style="margin-top: 20px;">
+      <strong>Streamlit as test harness:</strong> A separate Streamlit in Snowflake app for the development team to validate NBA generation, playbook output, and health scoring end-to-end before the web dashboard and Slack bot are ready. Not a production delivery channel.
+    </div>
+
+    <!-- Success Metrics -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-label">Adoption</div>
+        <div class="metric-number">80%+</div>
+        <div class="metric-desc">AEs using weekly, 10+ interactions per rep per week</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Efficiency</div>
+        <div class="metric-number">2+ hrs</div>
+        <div class="metric-desc">Saved per AE per week, 30% faster deal prep</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Effectiveness</div>
+        <div class="metric-number">10%+</div>
+        <div class="metric-desc">Conversion improvement, 15+ day cycle reduction</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Quality</div>
+        <div class="metric-number">70%+</div>
+        <div class="metric-desc">Thumbs-up rate on AI recommendations</div>
+      </div>
+    </div>
+
+    <!-- Cost -->
+    <div class="cost-bar">
+      <div>
+        <div class="cost-bar-label">Estimated Monthly Cost (50 reps, pilot scale)</div>
+        <div class="cost-bar-note">Snowflake (compute + SPCS + Dynamic Tables + Hybrid Tables) + OpenFlow + Azure Event Hubs + Azure Container Apps (as needed)</div>
+      </div>
+      <div class="cost-bar-amount">$1,100 - $1,300</div>
+    </div>
+
+  </div>
+</div>

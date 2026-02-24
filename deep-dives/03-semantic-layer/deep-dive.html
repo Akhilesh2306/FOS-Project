@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semantic Layer - FOS Architecture Deep Dive</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#F6F6FA;color:#2E2E38;line-height:1.6}
+
+/* Side Navigation */
+.side-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100}
+.side-nav a{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;color:#747480;transition:all 0.2s;border-left:3px solid transparent}
+.side-nav a:hover{background:#EDEDF0;color:#2E2E38}
+.side-nav a.active{background:#FFF9E0;color:#2E2E38;border-left-color:#FFE600;font-weight:600}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#C8C8D0;flex-shrink:0}
+.side-nav a.active .nav-dot{background:#FFE600}
+.side-nav a:hover .nav-dot{background:#747480}
+
+/* Header */
+.header{text-align:center;padding:64px 24px 40px}
+.part-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#747480;margin-bottom:12px}
+.page-title{font-size:36px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.page-subtitle{font-size:16px;color:#747480;max-width:720px;margin:0 auto;line-height:1.6}
+
+/* Page Container */
+.page{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+/* Section */
+.section{margin-bottom:56px;scroll-margin-top:40px}
+.section-header{margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.section-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FFE600;color:#2E2E38;font-size:14px;font-weight:700;flex-shrink:0}
+.section-title{font-size:22px;font-weight:700;color:#2E2E38}
+.section-subtitle{font-size:14px;color:#747480;margin-top:4px}
+
+/* Purpose/Intro Block */
+.purpose-block{border-left:4px solid #FFE600;padding:16px 20px;background:#FFFDE6;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.7}
+
+/* Cards */
+.card-grid{display:grid;gap:16px;margin-bottom:24px}
+.card-grid-2{grid-template-columns:repeat(2,1fr)}
+.card-grid-3{grid-template-columns:repeat(3,1fr)}
+.card-grid-4{grid-template-columns:repeat(4,1fr)}
+.card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:20px;transition:box-shadow 0.2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.card-desc{font-size:12px;color:#747480;line-height:1.7}
+.card-desc strong{color:#2E2E38}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;background:#FFF;border-radius:8px;overflow:hidden;border:1px solid #E0E0E4}
+thead{background:#F0F0F4}
+th{padding:12px 16px;text-align:left;font-weight:600;color:#2E2E38;border-bottom:2px solid #E0E0E4}
+td{padding:10px 16px;border-bottom:1px solid #F0F0F4;color:#2E2E38;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#FAFAFA}
+
+/* Flow Diagram */
+.flow{display:flex;align-items:center;gap:0;padding:20px 0;overflow-x:auto;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.flow-box{padding:12px 16px;border-radius:8px;font-size:12px;text-align:center;min-width:100px;border:2px solid #E0E0E4;background:#FFF;line-height:1.5}
+.flow-box strong{display:block;font-size:13px;color:#2E2E38}
+.flow-box small{color:#747480}
+.flow-arrow{font-size:18px;color:#747480;padding:0 8px;flex-shrink:0}
+.flow-box.bronze{border-color:#FFE600;background:#FFFDE6}
+.flow-box.silver{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.gold{border-color:#FF9800;background:#FFF3E0}
+.flow-box.semantic{border-color:#6A1B9A;background:#F3E5F5}
+.flow-box.snowflake{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.azure{border-color:#0078D4;background:#E6F0FA}
+.flow-box.agent{border-color:#FF6B00;background:#FFF3E0}
+.flow-note{font-size:13px;color:#747480;margin-bottom:16px;text-align:center}
+.flow-note strong{color:#2E2E38}
+
+/* Callout Boxes */
+.callout{border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7}
+.callout ul{margin:8px 0 0 18px}
+.callout li{margin-bottom:4px}
+.callout-decided{background:#E6F9E6;border-left:4px solid #2E7D32}
+.callout-open{background:#FFF8E1;border-left:4px solid #F9A825}
+.callout-risk{background:#FDE8E8;border-left:4px solid #C62828}
+.callout-info{background:#E3F2FD;border-left:4px solid #1565C0}
+
+/* Tags */
+.tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:2px 8px;border-radius:4px;margin:0 4px 4px 0;vertical-align:middle}
+.tag-decided{background:#E6F9E6;color:#2E7D32}
+.tag-tbd{background:#FFF8E1;color:#F9A825}
+.tag-risk{background:#FDE8E8;color:#C62828}
+.tag-info{background:#E3F2FD;color:#1565C0}
+
+/* Stat Row */
+.stat-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat{text-align:center;flex:1;min-width:80px;background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:16px 12px}
+.stat-number{font-size:28px;font-weight:700;color:#2E2E38}
+.stat-label{font-size:11px;color:#747480;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* Mono text */
+.mono{font-family:'Consolas','Monaco',monospace;font-size:12px;background:#F0F0F4;padding:1px 6px;border-radius:3px}
+
+/* Column Groups (for semantic layer) */
+.col-group{background:#FFF;border:1px solid #E0E0E4;border-radius:8px;padding:14px}
+.col-group-name{font-size:13px;font-weight:700;color:#2E2E38;margin-bottom:6px}
+.col-group-count{font-size:11px;color:#747480;font-weight:400;margin-left:6px}
+.col-group-item{font-size:11px;color:#747480;line-height:1.8;font-family:'Consolas',monospace}
+
+/* Hero View (for semantic layer) */
+.hero-view{background:#FFF;border:2px solid #6A1B9A;border-radius:12px;padding:24px;margin-bottom:24px}
+.hero-view-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6A1B9A;margin-bottom:4px}
+.hero-view-name{font-size:24px;font-weight:700;color:#2E2E38;margin-bottom:8px;font-family:'Consolas',monospace}
+.hero-view-desc{font-size:14px;color:#747480;margin-bottom:16px}
+
+/* Footer */
+.footer{text-align:center;padding:48px 24px;border-top:1px solid #E0E0E4;margin-top:48px}
+.footer-text{font-size:13px;color:#747480;margin-bottom:16px}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.footer-link{font-size:13px;color:#2E2E38;text-decoration:none;padding:8px 16px;border-radius:8px;background:#FFF;border:1px solid #E0E0E4;transition:all 0.2s}
+.footer-link:hover{background:#FFF9E0;border-color:#FFE600}
+.footer-link.current{background:#FFE600;font-weight:600;pointer-events:none}
+
+/* Responsive */
+@media(max-width:1400px){.side-nav{display:none}}
+@media(max-width:1024px){
+  .card-grid-3,.card-grid-4{grid-template-columns:repeat(2,1fr)}
+  .page-title{font-size:28px}
+  .header{padding:48px 24px 32px}
+}
+@media(max-width:640px){
+  .card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}
+  .stat-row{gap:8px}
+  .flow{flex-direction:column;align-items:stretch}
+  .flow-box{min-width:auto}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .page-title{font-size:22px}
+  .page-subtitle{font-size:14px}
+  .section-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDE NAVIGATION -->
+<nav class="side-nav">
+  <a href="#section-1" class="active"><span class="nav-dot"></span> Architecture Rule</a>
+  <a href="#section-2"><span class="nav-dot"></span> Key View</a>
+  <a href="#section-3"><span class="nav-dot"></span> All 11 Views</a>
+  <a href="#section-4"><span class="nav-dot"></span> Naming Convention</a>
+  <a href="#section-5"><span class="nav-dot"></span> Performance</a>
+  <a href="#section-6"><span class="nav-dot"></span> Decisions</a>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="part-label">Architecture Deep Dive 03</div>
+  <h1 class="page-title">Semantic Layer</h1>
+  <p class="page-subtitle">11 SQL views that agents query. The only data interface for AI. Agents never touch Gold, Silver, or Bronze.</p>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="page">
+
+  <!-- SECTION 1: Architecture Rule -->
+  <div class="section" id="section-1">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <h2 class="section-title">Architecture Rule</h2>
+    </div>
+
+    <div class="callout callout-decided">
+      <strong>DECIDED: Agents query ONLY the Semantic layer. Never Gold, Silver, or Bronze.</strong>
+      <p style="margin-top:8px">This is the single most important data access rule in the FOS system. If an agent needs data that does not exist in a Semantic view today, the correct response is to add a column to an existing view or create a new Semantic view. The incorrect response is to let the agent query Gold.</p>
+    </div>
+
+    <div class="card-grid card-grid-3" style="margin-top:24px">
+      <div class="card">
+        <div class="card-title">Clean Interface Contract</div>
+        <div class="card-desc">The Semantic layer is a stable API between two teams: <strong>data engineering</strong> (who owns Bronze through Gold) and <strong>AI engineering</strong> (who builds agents in SPCS). Each team works independently as long as Semantic view signatures stay stable.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Decouples Agents from Transform Logic</div>
+        <div class="card-desc">Gold views contain complex CTEs, weighted scoring formulas, window functions, and aggregation logic. With Semantic as the boundary, <strong>Gold logic can evolve freely</strong>. The Semantic view absorbs the change and continues to expose the same column names and types.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Medallion Changes Without Breaking Agents</div>
+        <div class="card-desc">The project may refactor how Silver computes <span class="mono">days_since_last_activity</span> or how Gold weights health score components. Those changes cascade through <strong>Dynamic Table auto-refresh</strong> and land in Semantic views transparently. Agents never know or care.</div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-box bronze"><strong>Bronze</strong><small>35 tables</small></div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box silver"><strong>Silver</strong><small>35 Dynamic Tables</small></div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box gold"><strong>Gold</strong><small>27 Dynamic Tables</small></div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box semantic"><strong>Semantic</strong><small>11 SQL Views</small></div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box agent"><strong>AI Agents</strong><small>SPCS containers</small></div>
+    </div>
+    <div class="flow-note">Agents read from <strong>Semantic only</strong>. They write back to Bronze Hybrid Tables, completing the feedback loop.</div>
+  </div>
+
+  <!-- SECTION 2: Key View -->
+  <div class="section" id="section-2">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <h2 class="section-title">Key View</h2>
+    </div>
+
+    <div class="hero-view">
+      <div class="hero-view-label">Primary Agent Input View</div>
+      <div class="hero-view-name">v_opportunity_llm_context</div>
+      <div class="hero-view-desc">Returns the complete context for any open opportunity in a single row. One query by opportunity_id, one row back, everything the LLM needs to generate a recommendation.</div>
+
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat-number">&lt;500ms</div>
+          <div class="stat-label">Target Latency</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">64</div>
+          <div class="stat-label">Columns</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">7</div>
+          <div class="stat-label">Column Groups</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">4</div>
+          <div class="stat-label">Consuming Agents</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">
+        <span class="tag tag-info">NBA Agent</span>
+        <span class="tag tag-info">Playbook Agent</span>
+        <span class="tag tag-info">Chat Interface</span>
+        <span class="tag tag-info">/analyze-deal</span>
+      </div>
+    </div>
+
+    <div class="purpose-block">
+      Before this view existed, an agent would need 4 to 6 separate queries to assemble deal context: opportunity, account, contacts, activities, Gong calls, MEDDPICC status. This view eliminates that entirely. One query, one row, one LLM call.
+    </div>
+
+    <h3 style="font-size:16px;font-weight:700;color:#2E2E38;margin-bottom:16px">7 Column Groups</h3>
+
+    <div class="card-grid card-grid-3">
+      <div class="col-group">
+        <div class="col-group-name">Deal Basics <span class="col-group-count">(13 columns)</span></div>
+        <div class="col-group-item">opportunity_id</div>
+        <div class="col-group-item">opportunity_name</div>
+        <div class="col-group-item">stage_name</div>
+        <div class="col-group-item">amount</div>
+        <div class="col-group-item">close_date</div>
+        <div class="col-group-item">days_to_close</div>
+        <div class="col-group-item">probability</div>
+        <div class="col-group-item">forecast_category</div>
+        <div class="col-group-item">opportunity_type</div>
+        <div class="col-group-item">next_step</div>
+        <div class="col-group-item">opportunity_description</div>
+        <div class="col-group-item">created_date</div>
+        <div class="col-group-item">days_in_stage</div>
+      </div>
+      <div class="col-group">
+        <div class="col-group-name">Account / Owner <span class="col-group-count">(11 columns)</span></div>
+        <div class="col-group-item">account_id</div>
+        <div class="col-group-item">account_name</div>
+        <div class="col-group-item">industry</div>
+        <div class="col-group-item">annual_revenue</div>
+        <div class="col-group-item">number_of_employees</div>
+        <div class="col-group-item">website</div>
+        <div class="col-group-item">billing_country</div>
+        <div class="col-group-item">owner_id</div>
+        <div class="col-group-item">owner_name</div>
+        <div class="col-group-item">owner_email</div>
+        <div class="col-group-item">owner_title</div>
+      </div>
+      <div class="col-group">
+        <div class="col-group-name">MEDDPICC <span class="col-group-count">(16 columns)</span></div>
+        <div class="col-group-item">meddicc_total_score__c</div>
+        <div class="col-group-item">meddicc_completion_pct__c</div>
+        <div class="col-group-item">meddicc_metrics__c</div>
+        <div class="col-group-item">meddicc_metrics_score__c</div>
+        <div class="col-group-item">economic_buyer__c</div>
+        <div class="col-group-item">economic_buyer_identified__c</div>
+        <div class="col-group-item">economic_buyer_engaged__c</div>
+        <div class="col-group-item">meddicc_eb_score__c</div>
+        <div class="col-group-item">decision_criteria__c</div>
+        <div class="col-group-item">meddicc_dc_score__c</div>
+        <div class="col-group-item">decision_process__c</div>
+        <div class="col-group-item">decision_timeline__c</div>
+        <div class="col-group-item">meddicc_dp_score__c</div>
+        <div class="col-group-item">identified_pain__c</div>
+        <div class="col-group-item">pain_severity__c</div>
+        <div class="col-group-item">meddicc_ip_score__c</div>
+      </div>
+      <div class="col-group">
+        <div class="col-group-name">Health / Risk <span class="col-group-count">(9 columns)</span></div>
+        <div class="col-group-item">deal_health_score__c</div>
+        <div class="col-group-item">deal_health_trend__c</div>
+        <div class="col-group-item">risk_level__c</div>
+        <div class="col-group-item">engagement_velocity__c</div>
+        <div class="col-group-item">is_stale</div>
+        <div class="col-group-item">is_overdue</div>
+        <div class="col-group-item">missing_economic_buyer</div>
+        <div class="col-group-item">missing_champion</div>
+        <div class="col-group-item">low_meddicc_completion</div>
+      </div>
+      <div class="col-group">
+        <div class="col-group-name">Engagement <span class="col-group-count">(5 columns)</span></div>
+        <div class="col-group-item">stakeholder_map</div>
+        <div class="col-group-item">stakeholder_count</div>
+        <div class="col-group-item">recent_activities_summary</div>
+        <div class="col-group-item">total_activity_count</div>
+        <div class="col-group-item">days_since_last_activity</div>
+      </div>
+      <div class="col-group">
+        <div class="col-group-name">Gong <span class="col-group-count">(3 columns)</span></div>
+        <div class="col-group-item">recent_gong_calls_summary</div>
+        <div class="col-group-item">total_gong_calls_count</div>
+        <div class="col-group-item">competitors_mentioned_in_calls</div>
+      </div>
+      <div class="col-group">
+        <div class="col-group-name">Agent Meta <span class="col-group-count">(7 columns)</span></div>
+        <div class="col-group-item">last_nba_generated__c</div>
+        <div class="col-group-item">days_since_last_nba</div>
+        <div class="col-group-item">se_required__c</div>
+        <div class="col-group-item">se_assigned__c</div>
+        <div class="col-group-item">contacts_engaged_count__c</div>
+        <div class="col-group-item">missing_meddicc_fields</div>
+        <div class="col-group-item">missing_field_count</div>
+        <div class="col-group-item">context_generated_at</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: All 11 Views -->
+  <div class="section" id="section-3">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <h2 class="section-title">All 11 Views</h2>
+    </div>
+
+    <div class="purpose-block">
+      11 views in <span class="mono">FOS_PROD.SEMANTIC</span>. Not more, not fewer, for MVP. Each view is a thin SQL wrapper over Gold Dynamic Tables, exposing business-friendly columns to agents.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>View Name</th>
+          <th>Purpose</th>
+          <th>Consumers</th>
+          <th>Target Latency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="mono">v_opportunity_llm_context</span></td>
+          <td>Complete deal context in one row for LLM agents</td>
+          <td>
+            <span class="tag tag-info">NBA</span>
+            <span class="tag tag-info">Playbook</span>
+            <span class="tag tag-info">Chat</span>
+            <span class="tag tag-info">/analyze-deal</span>
+          </td>
+          <td>&lt;500ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_account_overview</span></td>
+          <td>Account-level summary with firmographics and relationship history</td>
+          <td>
+            <span class="tag tag-info">NBA</span>
+            <span class="tag tag-info">Playbook</span>
+            <span class="tag tag-info">Dashboard</span>
+          </td>
+          <td>&lt;200ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_contact_map</span></td>
+          <td>Stakeholder map with roles, influence, engagement recency</td>
+          <td>
+            <span class="tag tag-info">NBA</span>
+            <span class="tag tag-info">Playbook</span>
+          </td>
+          <td>&lt;200ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_activity_timeline</span></td>
+          <td>Chronological activity feed for deal context</td>
+          <td>
+            <span class="tag tag-info">NBA</span>
+            <span class="tag tag-info">Playbook</span>
+            <span class="tag tag-info">Chat</span>
+          </td>
+          <td>&lt;200ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_deal_health_summary</span></td>
+          <td>Composite health score with 5 component breakdowns and trend</td>
+          <td>
+            <span class="tag tag-info">Detection</span>
+            <span class="tag tag-info">NBA</span>
+            <span class="tag tag-info">Dashboard</span>
+          </td>
+          <td>&lt;200ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_pipeline_overview</span></td>
+          <td>Aggregated pipeline metrics for manager dashboards</td>
+          <td>
+            <span class="tag tag-info">Dashboard</span>
+            <span class="tag tag-info">Detection</span>
+          </td>
+          <td>&lt;300ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_meddpicc_scorecard</span></td>
+          <td>All 8 MEDDPICC components with scores, status, gap identification</td>
+          <td>
+            <span class="tag tag-info">NBA</span>
+            <span class="tag tag-info">Playbook</span>
+            <span class="tag tag-info">Dashboard</span>
+          </td>
+          <td>&lt;200ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_gong_call_insights</span></td>
+          <td>Call summaries, talk ratios, competitor mentions, key topics</td>
+          <td>
+            <span class="tag tag-info">NBA</span>
+            <span class="tag tag-info">Playbook</span>
+            <span class="tag tag-info">RAG</span>
+          </td>
+          <td>&lt;200ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_content_library</span></td>
+          <td>Content metadata for RAG pre-filtering before vector search</td>
+          <td>
+            <span class="tag tag-info">RAG Agent</span>
+          </td>
+          <td>&lt;100ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_agent_performance</span></td>
+          <td>Agent execution metrics, processing times, success rates</td>
+          <td>
+            <span class="tag tag-info">Dashboard</span>
+            <span class="tag tag-info">Ops</span>
+          </td>
+          <td>&lt;200ms</td>
+        </tr>
+        <tr>
+          <td><span class="mono">v_feedback_analytics</span></td>
+          <td>User feedback patterns, thumbs up/down rates, action taken rates</td>
+          <td>
+            <span class="tag tag-info">Feedback</span>
+            <span class="tag tag-info">Dashboard</span>
+          </td>
+          <td>&lt;200ms</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4: Naming Convention -->
+  <div class="section" id="section-4">
+    <div class="section-header">
+      <span class="section-number">4</span>
+      <h2 class="section-title">Naming Convention</h2>
+    </div>
+
+    <div class="purpose-block">
+      Semantic layer columns use business-friendly English names. The rule: if you put the column name in an LLM prompt, a non-technical person should understand what it means without a data dictionary.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Instead of</th>
+          <th>Use this</th>
+          <th>Rule</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="mono">opp_name__c</span></td>
+          <td><span class="mono">opportunity_name</span></td>
+          <td>Readable in prompts, no Salesforce suffixes</td>
+        </tr>
+        <tr>
+          <td><span class="mono">acct_industry</span></td>
+          <td><span class="mono">account_industry</span></td>
+          <td>No abbreviations</td>
+        </tr>
+        <tr>
+          <td><span class="mono">calc_health_score_v2</span></td>
+          <td><span class="mono">health_score</span></td>
+          <td>No internal versioning exposed</td>
+        </tr>
+        <tr>
+          <td><span class="mono">meddicc_eb_score</span></td>
+          <td><span class="mono">economic_buyer_score</span></td>
+          <td>Spell out acronyms where possible</td>
+        </tr>
+        <tr>
+          <td><span class="mono">days_since_last_act</span></td>
+          <td><span class="mono">days_since_last_activity</span></td>
+          <td>No truncation</td>
+        </tr>
+        <tr>
+          <td><span class="mono">is_stale_flag</span></td>
+          <td><span class="mono">is_stale</span></td>
+          <td>No redundant suffixes</td>
+        </tr>
+        <tr>
+          <td><span class="mono">amt</span></td>
+          <td><span class="mono">amount</span></td>
+          <td>Full words always</td>
+        </tr>
+        <tr>
+          <td><span class="mono">opp_close_dt</span></td>
+          <td><span class="mono">close_date</span></td>
+          <td>Standard date naming</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>Why this matters for LLMs.</strong> When an agent builds a prompt like "The deal {opportunity_name} has a health score of {health_score} and the economic buyer has not been identified," every column name becomes part of the natural language context. Cryptic names like <span class="mono">calc_hs_v2</span> force the agent to include a translation layer in its prompt template, adding token count and reducing clarity. Clean names also help Snowflake Cortex Analyst, which introspects view schemas and uses column names as semantic hints when generating SQL from natural language.
+    </div>
+
+    <h3 style="font-size:15px;font-weight:700;color:#2E2E38;margin-bottom:12px;margin-top:24px">Naming Rules</h3>
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-desc">
+          <strong>snake_case</strong> for all column names<br>
+          <strong>Full English words</strong>, no abbreviations except universally understood ones (<span class="mono">id</span>, <span class="mono">url</span>, <span class="mono">pct</span>)<br>
+          <strong>Booleans</strong> start with <span class="mono">is_</span> or <span class="mono">has_</span><br>
+          <strong>Scores</strong> end with <span class="mono">_score</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-desc">
+          <strong>Counts</strong> end with <span class="mono">_count</span><br>
+          <strong>Percentages</strong> end with <span class="mono">_pct</span><br>
+          <strong>Dates</strong> end with <span class="mono">_date</span> or <span class="mono">_at</span><br>
+          <strong>Summaries</strong> end with <span class="mono">_summary</span> or <span class="mono">_description</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Performance -->
+  <div class="section" id="section-5">
+    <div class="section-header">
+      <span class="section-number">5</span>
+      <h2 class="section-title">Performance</h2>
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">Why SQL Views</div>
+        <div class="card-desc">
+          <strong>Always current.</strong> No refresh lag. When the agent queries, it gets the latest Gold data at that moment.<br><br>
+          <strong>Simpler to manage.</strong> No refresh schedules, no compute cost for materialization.<br><br>
+          <strong>Gold handles the heavy transforms.</strong> Semantic views are thin wrappers. The complex CTEs, scoring formulas, and window functions live in Gold Dynamic Tables, which refresh automatically.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Trade-off</div>
+        <div class="card-desc">
+          <strong>Complex views execute full query plan on every call.</strong> The key view <span class="mono">v_opportunity_llm_context</span> uses correlated subqueries for stakeholder_map, recent_activities_summary, and recent_gong_calls_summary. These are evaluated per-row.<br><br>
+          <strong>Snowflake result cache helps.</strong> If the same query runs twice within 24 hours and underlying data has not changed, the second execution returns cached results in milliseconds.<br><br>
+          <strong>Pipeline-level scans are heavier.</strong> <span class="mono">v_pipeline_overview</span> and <span class="mono">v_agent_performance</span> scan all open opportunities, but they are less latency-sensitive (dashboard and batch use cases).
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-open">
+      <strong>OPEN: Fallback plan if 500ms is not achievable.</strong> If plain views cannot meet the 500ms target at production data volumes, the fallback is to convert <span class="mono">v_opportunity_llm_context</span> into a Dynamic Table with a short refresh interval (e.g., 1 minute). This trades absolute freshness for guaranteed performance. The decision should be data-driven based on actual query latency measurements during the pilot.
+    </div>
+
+    <h3 style="font-size:15px;font-weight:700;color:#2E2E38;margin-bottom:12px;margin-top:8px">Optimization Strategies</h3>
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-desc">
+          <strong>1.</strong> Ensure clustering/indexes on <span class="mono">opportunity_id</span> across all joined tables<br><br>
+          <strong>2.</strong> Limit subqueries to bounded sets (last 10 activities, last 3 Gong calls)
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-desc">
+          <strong>3.</strong> Use STRING_AGG for efficient single-pass concatenation<br><br>
+          <strong>4.</strong> If subquery performance degrades at scale, pre-compute aggregations into Gold Dynamic Tables
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Decisions -->
+  <div class="section" id="section-6">
+    <div class="section-header">
+      <span class="section-number">6</span>
+      <h2 class="section-title">Decisions</h2>
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card" style="border-left:4px solid #2E7D32">
+        <div class="card-title" style="color:#2E7D32">DECIDED</div>
+        <div class="card-desc">
+          <ul style="margin:8px 0 0 16px;list-style:disc">
+            <li><strong>11 views</strong> in FOS_PROD.SEMANTIC for MVP</li>
+            <li><strong>SQL views</strong>, not Dynamic Tables or materialized views</li>
+            <li><strong>Business-friendly column names</strong>. No Salesforce __c suffixes in Semantic</li>
+            <li><strong>Agents query Semantic only.</strong> Never Gold, Silver, or Bronze</li>
+            <li style="margin-top:8px"><strong>Health score weights (AHP composite):</strong></li>
+          </ul>
+          <table style="margin:12px 0 0 0;font-size:12px;width:auto;min-width:280px">
+            <thead>
+              <tr>
+                <th style="padding:8px 12px">Component</th>
+                <th style="padding:8px 12px">Weight</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="padding:6px 12px">Activity</td><td style="padding:6px 12px;font-weight:700">30%</td></tr>
+              <tr><td style="padding:6px 12px">Threading</td><td style="padding:6px 12px;font-weight:700">25%</td></tr>
+              <tr><td style="padding:6px 12px">Velocity</td><td style="padding:6px 12px;font-weight:700">20%</td></tr>
+              <tr><td style="padding:6px 12px">MEDDPICC</td><td style="padding:6px 12px;font-weight:700">15%</td></tr>
+              <tr><td style="padding:6px 12px">Close Date</td><td style="padding:6px 12px;font-weight:700">10%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="border-left:4px solid #F9A825">
+        <div class="card-title" style="color:#F9A825">OPEN</div>
+        <div class="card-desc">
+          <ul style="margin:8px 0 0 16px;list-style:disc">
+            <li><strong>MEDDPICC vs MEDDICC scoring total.</strong> Some parts score out of 21 (7 components), others out of 24 (8 with Paper Process). Needs one canonical total.</li>
+            <li><strong>6 views still need SQL written.</strong> Only <span class="mono">v_opportunity_llm_context</span> has a full SQL definition. The other Semantic wrapper views have not been authored yet.</li>
+            <li><strong>Naming gap.</strong> PRD uses names like <span class="mono">v_deal_health_summary</span>. Storybook uses <span class="mono">v_opportunity_health_current</span>. Gold uses its own names. Canonical mapping needed.</li>
+            <li><strong>Gong data fallback.</strong> If Gong connector is not available at launch, Gong columns return NULLs. Should views return "No Gong data available" strings instead?</li>
+            <li><strong>Actual latency at scale.</strong> The 500ms target for <span class="mono">v_opportunity_llm_context</span> is an assumption. Not benchmarked against real opportunity volumes.</li>
+            <li><strong>v_pipeline_overview aggregation level.</strong> Per-rep, per-team, or per-company? PRD mentions manager pipeline reviews (team-level), but the view is not defined yet.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">This is one of seven architecture deep dives for the Future of Sales project.</div>
+  <div class="footer-links">
+    <a class="footer-link" href="../01-data-extraction/deep-dive.html">01 Data Extraction</a>
+    <a class="footer-link" href="../02-medallion/deep-dive.html">02 Medallion</a>
+    <a class="footer-link current" href="#">03 Semantic Layer</a>
+    <a class="footer-link" href="../04-rag-pipeline/deep-dive.html">04 RAG Pipeline</a>
+    <a class="footer-link" href="../05-application-layer/deep-dive.html">05 Application</a>
+    <a class="footer-link" href="../06-agent-runtime/deep-dive.html">06 Agent Runtime</a>
+    <a class="footer-link" href="../07-data-flows/deep-dive.html">07 Data Flows</a>
+  </div>
+</div>
+
+<!-- SCROLL SPY -->
+<script>
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.side-nav a');
+window.addEventListener('scroll', function() {
+  let current = '';
+  sections.forEach(function(section) {
+    const sectionTop = section.offsetTop - 100;
+    if (window.scrollY >= sectionTop) current = section.getAttribute('id');
+  });
+  navLinks.forEach(function(link) {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

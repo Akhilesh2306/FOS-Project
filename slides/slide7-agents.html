@@ -1,0 +1,179 @@
+<div class="slide slide-light slide-scroll" id="slide-7">
+  <div class="slide-inner">
+    <div class="slide-badge-outline">AI Agents</div>
+    <div class="slide-title">Five specialists. <span class="highlight-text">One coordination pattern.</span></div>
+    <div class="slide-subtitle">
+      Each agent has a single responsibility. They coordinate through an event queue and Azure Event Hubs.
+    </div>
+
+    <!-- 5 Agent Cards -->
+    <div class="agent-row">
+
+      <!-- Detection -->
+      <div class="agent-card">
+        <div class="agent-card-name">Detection</div>
+        <div class="agent-card-role">The Monitor</div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">Trigger</div>
+          <div class="agent-detail-text">Snowflake Task every 60 min + Event Hubs for real-time</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">What It Does</div>
+          <div class="agent-detail-text">Scans all open deals for: stale activity, stage changes, MEDDPICC gaps, health drops, close date movements</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">LLM</div>
+          <div class="agent-detail-text">None. Purely data-driven.</div>
+        </div>
+        <div class="agent-writes-to">fos_agent_events</div>
+      </div>
+
+      <!-- NBA -->
+      <div class="agent-card">
+        <div class="agent-card-name">NBA</div>
+        <div class="agent-card-role">The Advisor</div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">Trigger</div>
+          <div class="agent-detail-text">Events from Detection Agent via Event Hubs</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">What It Does</div>
+          <div class="agent-detail-text">Pulls deal context from v_opportunity_llm_context, builds prompt, calls Cortex LLM, generates 3 to 5 ranked recommendations</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">LLM</div>
+          <div class="agent-detail-text">Snowflake Cortex LLM</div>
+        </div>
+        <div class="agent-writes-to">fos_next_best_actions</div>
+      </div>
+
+      <!-- Playbook -->
+      <div class="agent-card">
+        <div class="agent-card-name">Playbook</div>
+        <div class="agent-card-role">The Strategist</div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">Trigger</div>
+          <div class="agent-detail-text">Stage change or on-demand request</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">What It Does</div>
+          <div class="agent-detail-text">Generates 11-section deal guide tailored to industry, stage, competitors, personas</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">LLM</div>
+          <div class="agent-detail-text">Snowflake Cortex LLM</div>
+        </div>
+        <div class="agent-writes-to">fos_playbooks</div>
+      </div>
+
+      <!-- RAG -->
+      <div class="agent-card">
+        <div class="agent-card-name">RAG</div>
+        <div class="agent-card-role">The Researcher</div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">Trigger</div>
+          <div class="agent-detail-text">Called by NBA and Playbook agents</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">What It Does</div>
+          <div class="agent-detail-text">Two-stage retrieval: metadata filter (SQL) then vector similarity (Cortex Search)</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">Content</div>
+          <div class="agent-detail-text">Battle cards, win/loss reports, case studies, competitive intel</div>
+        </div>
+        <div class="agent-writes-to">fos_content_chunks</div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="agent-card">
+        <div class="agent-card-name">Feedback</div>
+        <div class="agent-card-role">The Observer</div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">Trigger</div>
+          <div class="agent-detail-text">User interaction (thumbs up/down, ratings)</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">What It Does</div>
+          <div class="agent-detail-text">Collects feedback, tracks whether actions led to stage progression or wins</div>
+        </div>
+        <div class="agent-detail">
+          <div class="agent-detail-label">LLM</div>
+          <div class="agent-detail-text">None. Data collection only.</div>
+        </div>
+        <div class="agent-writes-to">fos_feedback_log</div>
+      </div>
+    </div>
+
+    <!-- Coordination Flow -->
+    <div style="margin-top: 28px;">
+      <div class="mock-section-title" style="margin-bottom: 8px;">How They Coordinate</div>
+    </div>
+    <div class="coord-flow">
+      <div class="coord-step">
+        <div class="coord-step-num">1</div>
+        <div class="coord-step-name">Detection scans</div>
+        <div class="coord-step-desc">Snowflake Task runs every 60 min, scans via Semantic views</div>
+      </div>
+      <div class="coord-arrow">&rarr;</div>
+      <div class="coord-step">
+        <div class="coord-step-num">2</div>
+        <div class="coord-step-name">Events published</div>
+        <div class="coord-step-desc">Triggers written to Hybrid Table + published to Azure Event Hubs</div>
+      </div>
+      <div class="coord-arrow">&rarr;</div>
+      <div class="coord-step">
+        <div class="coord-step-num">3</div>
+        <div class="coord-step-name">Agents consume</div>
+        <div class="coord-step-desc">NBA, Playbook, RAG subscribe to Event Hubs topics</div>
+      </div>
+      <div class="coord-arrow">&rarr;</div>
+      <div class="coord-step">
+        <div class="coord-step-num">4</div>
+        <div class="coord-step-name">Process and write</div>
+        <div class="coord-step-desc">Agent queries Semantic, calls Cortex LLM, writes results to Hybrid Tables</div>
+      </div>
+      <div class="coord-arrow">&rarr;</div>
+      <div class="coord-step">
+        <div class="coord-step-num">5</div>
+        <div class="coord-step-name">Deliver</div>
+        <div class="coord-step-desc">Results sent via Slack DM or shown on dashboard</div>
+      </div>
+    </div>
+
+    <!-- Infrastructure Tags -->
+    <div class="agent-infra-row">
+      <span class="agent-infra-tag">Snowpark Container Services (hosting)</span>
+      <span class="agent-infra-tag">LangGraph 1.0 (orchestration)</span>
+      <span class="agent-infra-tag">langgraph-checkpoint-snowflake (state)</span>
+      <span class="agent-infra-tag">Snowflake Cortex LLM (inference)</span>
+      <span class="agent-infra-tag">Cortex Search (RAG)</span>
+      <span class="agent-infra-tag">Azure Event Hubs (pub/sub)</span>
+      <span class="agent-infra-tag">Azure Container Apps (as needed)</span>
+      <span class="agent-infra-tag">LangSmith (tracing)</span>
+    </div>
+
+    <!-- Feature to Agent Mapping -->
+    <div style="margin-top: 24px;">
+      <div class="mock-section-title" style="margin-bottom: 10px;">Feature to Agent Mapping</div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div style="background: #FAFAFA; border: 1.5px solid #E7E7EA; border-radius: 8px; padding: 12px 16px;">
+        <div style="font-size: 12px; font-weight: 700; color: #2E2E38; margin-bottom: 4px;">Next Best Action</div>
+        <div style="font-size: 11px; color: #555;">Detection Agent (finds triggers) + NBA Agent (generates recommendations)</div>
+      </div>
+      <div style="background: #FAFAFA; border: 1.5px solid #E7E7EA; border-radius: 8px; padding: 12px 16px;">
+        <div style="font-size: 12px; font-weight: 700; color: #2E2E38; margin-bottom: 4px;">Dynamic Playbook</div>
+        <div style="font-size: 11px; color: #555;">Playbook Agent (generates guide) + RAG Agent (finds relevant content)</div>
+      </div>
+      <div style="background: #FAFAFA; border: 1.5px solid #E7E7EA; border-radius: 8px; padding: 12px 16px;">
+        <div style="font-size: 12px; font-weight: 700; color: #2E2E38; margin-bottom: 4px;">Slack Chat</div>
+        <div style="font-size: 11px; color: #555;">Routes to the right agent: health queries to NBA, content to RAG, playbooks to Playbook</div>
+      </div>
+      <div style="background: #FAFAFA; border: 1.5px solid #E7E7EA; border-radius: 8px; padding: 12px 16px;">
+        <div style="font-size: 12px; font-weight: 700; color: #2E2E38; margin-bottom: 4px;">Web Dashboard</div>
+        <div style="font-size: 11px; color: #555;">Reads from all agent output tables. Feedback Agent serves all features.</div>
+      </div>
+    </div>
+  </div>
+</div>

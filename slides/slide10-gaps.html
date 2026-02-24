@@ -1,0 +1,154 @@
+<div class="slide slide-scroll slide-light" id="slide-10">
+  <div class="slide-inner">
+    <div class="section-badge">ROADMAP</div>
+    <h1 class="slide-title" style="margin-bottom:6px;">Phasing and Early Considerations</h1>
+    <p style="color:#747480;font-size:14px;margin-bottom:28px;">Phase 1 delivers the core sales intelligence platform. Phase 2 layers on Canva content generation. We have identified key items to address early in development to keep delivery smooth.</p>
+
+    <!-- PHASE FRAMING -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px;">
+      <div style="background:#ECFDF5;border:1.5px solid #6EE7B7;border-radius:10px;padding:20px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#065F46;margin-bottom:8px;">Phase 1 -- Sales Intelligence Platform</div>
+        <div style="font-size:13px;color:#2E2E38;line-height:1.7;">
+          <strong>What we deliver:</strong> Proactive AI assistant that monitors deals, detects risks, generates recommendations, and delivers via Slack and web dashboard.<br><br>
+          <strong>Detection Agent</strong> catches stale deals, stage changes, health drops<br>
+          <strong>NBA Agent</strong> generates ranked actions with justifications<br>
+          <strong>Playbook Agent</strong> creates 11-section text-based deal guides<br>
+          <strong>RAG Agent</strong> searches battle cards and competitive intel<br>
+          <strong>Feedback Agent</strong> collects thumbs up/down, tracks outcomes<br><br>
+          <strong>Delivery:</strong> Slack (proactive + on-demand) and Web Dashboard (AE + Manager views)
+        </div>
+      </div>
+      <div style="background:#FFF8E1;border:1.5px solid #FCD34D;border-radius:10px;padding:20px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#92400E;margin-bottom:8px;">Phase 2 -- Content Generation (Canva Layer)</div>
+        <div style="font-size:13px;color:#2E2E38;line-height:1.7;">
+          <strong>What we add:</strong> Canva-native content generation on top of the base intelligence platform.<br><br>
+          <strong>BrandKit API</strong> integration for on-brand proposal generation<br>
+          <strong>Product Catalog</strong> ingestion so agents can recommend templates<br>
+          <strong>Canva MCP</strong> tool added to agent runtime (tool #8)<br>
+          <strong>Workspace Delivery</strong> so generated assets land in Canva<br>
+          <strong>BrandBrain</strong> early adopter integration (if available)<br><br>
+          <strong>Why this is additive:</strong> Architecture is modular. Adding a tool, a Bronze source, and an output format requires zero rework of Phase 1.
+        </div>
+      </div>
+    </div>
+
+    <!-- EARLY IDENTIFICATION ITEMS -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#2E2E38;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FFE600;">Items to Address Early in Development</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px;">
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-left:4px solid #FFE600;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">Gong Connector Selection</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">Three options under evaluation: Fivetran, native HTTP/API, or Snowflake Data Cloud. Recommend finalizing early so Bronze layer development for 16 Gong objects can begin in parallel.</div>
+      </div>
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-left:4px solid #FFE600;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">Content Pipeline Design</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">RAG pipeline needs chunking strategy, embedding configuration, and Cortex Search index design finalized. Planning to address in Sprint 1 alongside agent development.</div>
+      </div>
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-left:4px solid #FFE600;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">MEDDPICC Field Validation</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">Architecture defines 28 custom fields for health scoring. Need to validate API names against Canva's actual Salesforce org to ensure schema alignment.</div>
+      </div>
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-left:4px solid #FFE600;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">Content Source Confirmation</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">Architecture is designed for Guru as the knowledge base. Need to confirm this is what Canva uses so the content extraction pipeline targets the right system.</div>
+      </div>
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-left:4px solid #FFE600;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">Gong Transcripts in RAG</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">Call transcripts are ingested to Bronze. Need to determine whether they should also be indexed in Cortex Search so agents can cite specific call quotes in recommendations.</div>
+      </div>
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-left:4px solid #FFE600;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">Staleness Thresholds by Stage</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">Detection Agent uses configurable thresholds. Need Canva input on what "stale" means at each sales stage to tune alerts appropriately for their sales cycle.</div>
+      </div>
+    </div>
+
+    <!-- ARCHITECTURAL DESIGN DECISIONS -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#2E2E38;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FFE600;">Design Decisions for Phase 1</div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:28px;background:#FFF;border-radius:8px;overflow:hidden;border:1px solid #E7E7EA;">
+      <thead style="background:#FFFDE6;">
+        <tr>
+          <th style="padding:10px 14px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#2E2E38;border-bottom:2px solid #FFE600;">Area</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#2E2E38;border-bottom:2px solid #FFE600;">Phase 1 Approach</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#2E2E38;border-bottom:2px solid #FFE600;">Phase 2 Enhancement</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #F0F0F4;">
+          <td style="padding:8px 14px;font-weight:600;color:#2E2E38;">CRM Updates</td>
+          <td style="padding:8px 14px;color:#747480;">Read-only. Agents do not write to Salesforce. Architecturally, humans should own CRM data for accuracy and trust.</td>
+          <td style="padding:8px 14px;color:#747480;">Explore assisted CRM population with AE approval step</td>
+        </tr>
+        <tr style="border-bottom:1px solid #F0F0F4;">
+          <td style="padding:8px 14px;font-weight:600;color:#2E2E38;">Playbook Delivery</td>
+          <td style="padding:8px 14px;color:#747480;">Async generation. 11-section playbooks with RAG and LLM take 10 to 18 seconds. User gets a notification when the playbook is ready.</td>
+          <td style="padding:8px 14px;color:#747480;">Optimize with parallel section generation and caching</td>
+        </tr>
+        <tr style="border-bottom:1px solid #F0F0F4;">
+          <td style="padding:8px 14px;font-weight:600;color:#2E2E38;">Manager View</td>
+          <td style="padding:8px 14px;color:#747480;">Pipeline overview with health scores, deal counts, and MEDDPICC completeness. Focused on visibility.</td>
+          <td style="padding:8px 14px;color:#747480;">Full coaching dashboard with rep activity patterns and deal review workflows</td>
+        </tr>
+        <tr style="border-bottom:1px solid #F0F0F4;">
+          <td style="padding:8px 14px;font-weight:600;color:#2E2E38;">Notification Timing</td>
+          <td style="padding:8px 14px;color:#747480;">Polling-based detection every 60 minutes. Sufficient for deal-level cadence where actions are measured in hours and days.</td>
+          <td style="padding:8px 14px;color:#747480;">Add Salesforce Platform Events for near-real-time stage changes</td>
+        </tr>
+        <tr style="border-bottom:1px solid #F0F0F4;">
+          <td style="padding:8px 14px;font-weight:600;color:#2E2E38;">Email Drafts</td>
+          <td style="padding:8px 14px;color:#747480;">Generate email text in Slack. AE copies and personalizes before sending. Keeps human in the loop.</td>
+          <td style="padding:8px 14px;color:#747480;">Direct integration with Gmail/Outlook for one-click draft creation</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 14px;font-weight:600;color:#2E2E38;">SE Handoff</td>
+          <td style="padding:8px 14px;color:#747480;">Agent recommends SE engagement. AE approves and triggers the notification. Ensures AE stays in control of the relationship.</td>
+          <td style="padding:8px 14px;color:#747480;">Auto-notify SE with opt-out, based on confidence threshold</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ITEMS FOR CANVA INPUT -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#2E2E38;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #FFE600;">Items Requiring Canva Input</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px;">
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-radius:8px;padding:14px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#747480;margin-bottom:6px;">Sales Content</div>
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">Which knowledge base does the sales team use?</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">Architecture supports Guru, Confluence, or SharePoint. Need to confirm so we target the right extraction pipeline.</div>
+      </div>
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-radius:8px;padding:14px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#747480;margin-bottom:6px;">Salesforce Schema</div>
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">Can we get access to validate MEDDPICC custom fields?</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">Need to confirm 28 field API names, stage picklist values, and opportunity record types match our data model.</div>
+      </div>
+      <div style="background:#FFF;border:1.5px solid #E7E7EA;border-radius:8px;padding:14px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#747480;margin-bottom:6px;">Sales Cycle</div>
+        <div style="font-size:12px;font-weight:700;color:#2E2E38;margin-bottom:4px;">What are typical deal durations by stage?</div>
+        <div style="font-size:11px;color:#747480;line-height:1.5;">Needed to calibrate staleness thresholds so alerts are timely without being noisy. Different stages need different cadences.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 PREVIEW -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#747480;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #E7E7EA;">Phase 2 Preview</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:#F7F7F9;border:1px solid #E7E7EA;border-radius:6px;padding:10px;font-size:10px;color:#747480;line-height:1.5;">
+        <strong style="color:#2E2E38;">Canva Integration</strong><br>BrandKit, product catalog, MCP, workspace delivery, BrandBrain
+      </div>
+      <div style="background:#F7F7F9;border:1px solid #E7E7EA;border-radius:6px;padding:10px;font-size:10px;color:#747480;line-height:1.5;">
+        <strong style="color:#2E2E38;">External Integrations</strong><br>Email ingestion, LinkedIn enrichment, calendar and meeting scheduling
+      </div>
+      <div style="background:#F7F7F9;border:1px solid #E7E7EA;border-radius:6px;padding:10px;font-size:10px;color:#747480;line-height:1.5;">
+        <strong style="color:#2E2E38;">Advanced AI</strong><br>MEDDPICC auto-population, confidence scoring, feedback loop tuning, batch operations
+      </div>
+      <div style="background:#F7F7F9;border:1px solid #E7E7EA;border-radius:6px;padding:10px;font-size:10px;color:#747480;line-height:1.5;">
+        <strong style="color:#2E2E38;">Enterprise Features</strong><br>RBAC, real-time SF events, multi-turn memory, deal size routing, notification preferences UI
+      </div>
+    </div>
+
+    <div style="background:#ECFDF5;border:1.5px solid #6EE7B7;border-radius:8px;padding:14px;font-size:12px;color:#065F46;line-height:1.6;">
+      <strong>Architecture supports clean phasing:</strong> Agents use a tool registry (add tools without rework). Data pipeline is additive (add Bronze sources without changing Silver/Gold). Output formats are extensible (add sections without rewriting). Phase 2 layers on top of Phase 1 with zero rearchitecture.
+    </div>
+
+  </div>
+</div>

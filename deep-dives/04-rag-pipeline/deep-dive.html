@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG and Content Pipeline - FOS Architecture Deep Dive</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#F6F6FA;color:#2E2E38;line-height:1.6}
+
+/* Side Navigation */
+.side-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100}
+.side-nav a{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;color:#747480;transition:all 0.2s;border-left:3px solid transparent}
+.side-nav a:hover{background:#EDEDF0;color:#2E2E38}
+.side-nav a.active{background:#FFF9E0;color:#2E2E38;border-left-color:#FFE600;font-weight:600}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#C8C8D0;flex-shrink:0}
+.side-nav a.active .nav-dot{background:#FFE600}
+.side-nav a:hover .nav-dot{background:#747480}
+
+/* Header */
+.header{text-align:center;padding:64px 24px 40px}
+.part-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#747480;margin-bottom:12px}
+.page-title{font-size:36px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.page-subtitle{font-size:16px;color:#747480;max-width:720px;margin:0 auto;line-height:1.6}
+
+/* Page Container */
+.page{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+/* Section */
+.section{margin-bottom:56px;scroll-margin-top:40px}
+.section-header{margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.section-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FFE600;color:#2E2E38;font-size:14px;font-weight:700;flex-shrink:0}
+.section-title{font-size:22px;font-weight:700;color:#2E2E38}
+.section-subtitle{font-size:14px;color:#747480;margin-top:4px}
+
+/* Purpose/Intro Block */
+.purpose-block{border-left:4px solid #FFE600;padding:16px 20px;background:#FFFDE6;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.7}
+
+/* Cards */
+.card-grid{display:grid;gap:16px;margin-bottom:24px}
+.card-grid-2{grid-template-columns:repeat(2,1fr)}
+.card-grid-3{grid-template-columns:repeat(3,1fr)}
+.card-grid-4{grid-template-columns:repeat(4,1fr)}
+.card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:20px;transition:box-shadow 0.2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.card-desc{font-size:12px;color:#747480;line-height:1.7}
+.card-desc strong{color:#2E2E38}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;background:#FFF;border-radius:8px;overflow:hidden;border:1px solid #E0E0E4}
+thead{background:#F0F0F4}
+th{padding:12px 16px;text-align:left;font-weight:600;color:#2E2E38;border-bottom:2px solid #E0E0E4}
+td{padding:10px 16px;border-bottom:1px solid #F0F0F4;color:#2E2E38;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#FAFAFA}
+
+/* Flow Diagram */
+.flow{display:flex;align-items:center;gap:0;padding:20px 0;overflow-x:auto;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.flow-box{padding:12px 16px;border-radius:8px;font-size:12px;text-align:center;min-width:100px;border:2px solid #E0E0E4;background:#FFF;line-height:1.5}
+.flow-box strong{display:block;font-size:13px;color:#2E2E38}
+.flow-box small{color:#747480}
+.flow-arrow{font-size:18px;color:#747480;padding:0 8px;flex-shrink:0}
+.flow-box.bronze{border-color:#FFE600;background:#FFFDE6}
+.flow-box.silver{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.gold{border-color:#FF9800;background:#FFF3E0}
+.flow-box.semantic{border-color:#6A1B9A;background:#F3E5F5}
+.flow-box.snowflake{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.azure{border-color:#0078D4;background:#E6F0FA}
+.flow-box.agent{border-color:#FF6B00;background:#FFF3E0}
+.flow-note{font-size:13px;color:#747480;margin-bottom:16px;text-align:center}
+.flow-note strong{color:#2E2E38}
+
+/* Callout Boxes */
+.callout{border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7}
+.callout ul{margin:8px 0 0 18px}
+.callout li{margin-bottom:4px}
+.callout-decided{background:#E6F9E6;border-left:4px solid #2E7D32}
+.callout-open{background:#FFF8E1;border-left:4px solid #F9A825}
+.callout-risk{background:#FDE8E8;border-left:4px solid #C62828}
+.callout-info{background:#E3F2FD;border-left:4px solid #1565C0}
+
+/* Tags */
+.tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:2px 8px;border-radius:4px;margin:0 4px 4px 0;vertical-align:middle}
+.tag-decided{background:#E6F9E6;color:#2E7D32}
+.tag-tbd{background:#FFF8E1;color:#F9A825}
+.tag-risk{background:#FDE8E8;color:#C62828}
+.tag-info{background:#E3F2FD;color:#1565C0}
+
+/* Stat Row */
+.stat-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat{text-align:center;flex:1;min-width:80px;background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:16px 12px}
+.stat-number{font-size:28px;font-weight:700;color:#2E2E38}
+.stat-label{font-size:11px;color:#747480;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* Mono text */
+.mono{font-family:'Consolas','Monaco',monospace;font-size:12px;background:#F0F0F4;padding:1px 6px;border-radius:3px}
+
+/* Column Groups (for semantic layer) */
+.col-group{background:#FFF;border:1px solid #E0E0E4;border-radius:8px;padding:14px}
+.col-group-name{font-size:13px;font-weight:700;color:#2E2E38;margin-bottom:6px}
+.col-group-item{font-size:11px;color:#747480;line-height:1.8;font-family:'Consolas',monospace}
+
+/* Hero View (for semantic layer) */
+.hero-view{background:#FFF;border:2px solid #6A1B9A;border-radius:12px;padding:24px;margin-bottom:24px}
+.hero-view-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6A1B9A;margin-bottom:4px}
+.hero-view-name{font-size:24px;font-weight:700;color:#2E2E38;margin-bottom:8px;font-family:'Consolas',monospace}
+.hero-view-desc{font-size:14px;color:#747480;margin-bottom:16px}
+
+/* Footer */
+.footer{text-align:center;padding:48px 24px;border-top:1px solid #E0E0E4;margin-top:48px}
+.footer-text{font-size:13px;color:#747480;margin-bottom:16px}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.footer-link{font-size:13px;color:#2E2E38;text-decoration:none;padding:8px 16px;border-radius:8px;background:#FFF;border:1px solid #E0E0E4;transition:all 0.2s}
+.footer-link:hover{background:#FFF9E0;border-color:#FFE600}
+.footer-link.current{background:#FFE600;font-weight:600;pointer-events:none}
+
+/* Responsive */
+@media(max-width:1400px){.side-nav{display:none}}
+@media(max-width:1024px){
+  .card-grid-3,.card-grid-4{grid-template-columns:repeat(2,1fr)}
+  .page-title{font-size:28px}
+  .header{padding:48px 24px 32px}
+}
+@media(max-width:640px){
+  .card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}
+  .stat-row{gap:8px}
+  .flow{flex-direction:column;align-items:stretch}
+  .flow-box{min-width:auto}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .page-title{font-size:22px}
+  .page-subtitle{font-size:14px}
+  .section-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDE NAVIGATION -->
+<nav class="side-nav">
+  <a href="#section-1" class="active"><span class="nav-dot"></span> Key Distinction</a>
+  <a href="#section-2"><span class="nav-dot"></span> Pipeline Flow</a>
+  <a href="#section-3"><span class="nav-dot"></span> Content Types</a>
+  <a href="#section-4"><span class="nav-dot"></span> Extraction Options</a>
+  <a href="#section-5"><span class="nav-dot"></span> Chunking Strategy</a>
+  <a href="#section-6"><span class="nav-dot"></span> Two-Stage Retrieval</a>
+  <a href="#section-7"><span class="nav-dot"></span> Open Questions</a>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="part-label">Architecture Deep Dive 04</div>
+  <h1 class="page-title">RAG and Content Pipeline</h1>
+  <p class="page-subtitle">Separate from medallion. Unstructured knowledge from Guru to Cortex Search. Two-stage retrieval: SQL filter then vector similarity.</p>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="page">
+
+  <!-- SECTION 1: Key Distinction -->
+  <div class="section" id="section-1">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <h2 class="section-title">Key Distinction</h2>
+    </div>
+    <div class="purpose-block">
+      The RAG pipeline is a <strong>completely separate system</strong> from the medallion data architecture. They serve different purposes, handle different data types, and follow different paths. Understanding this separation is critical to understanding the FOS architecture.
+    </div>
+
+    <div class="callout callout-decided">
+      <strong>DECIDED:</strong> Medallion = structured data (SFDC, Gong) through Dynamic Tables. RAG = unstructured knowledge (Guru) through Cortex Search. Two separate pipelines.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>Medallion Architecture</th>
+          <th>RAG Content Pipeline</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Data type</strong></td>
+          <td>Structured (Salesforce, Gong)</td>
+          <td>Unstructured (documents, cards, reports)</td>
+        </tr>
+        <tr>
+          <td><strong>Source</strong></td>
+          <td>SFDC via OpenFlow, Gong via connector</td>
+          <td>Guru knowledge base (primary)</td>
+        </tr>
+        <tr>
+          <td><strong>Destination</strong></td>
+          <td>Bronze, Silver, Gold, Semantic</td>
+          <td>Cortex Search index</td>
+        </tr>
+        <tr>
+          <td><strong>Consumed by</strong></td>
+          <td>All agents (via Semantic views)</td>
+          <td>RAG Agent (serves NBA and Playbook agents)</td>
+        </tr>
+        <tr>
+          <td><strong>Storage format</strong></td>
+          <td>Relational tables and Dynamic Tables</td>
+          <td>Chunked text with vector embeddings</td>
+        </tr>
+        <tr>
+          <td><strong>Query method</strong></td>
+          <td>Against Semantic views</td>
+          <td>Two-stage: metadata filter then vector similarity</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>Relationship to agents:</strong> The RAG Agent is not a standalone consumer. It is a <strong>service agent</strong> called by the NBA Agent and Playbook Agent when they need knowledge content to enrich their outputs. When the NBA Agent generates recommendations for a stale deal involving a competitor, it calls the RAG Agent to retrieve relevant battle card sections. When the Playbook Agent builds a deal playbook, it calls the RAG Agent for objection handling scripts and case studies.
+    </div>
+  </div>
+
+  <!-- SECTION 2: Pipeline Flow -->
+  <div class="section" id="section-2">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <h2 class="section-title">Pipeline Flow</h2>
+    </div>
+    <div class="purpose-block">
+      The content pipeline follows a linear flow from source extraction through embedding and indexing to serving. Eight stages transform raw Guru content into searchable, retrievable knowledge chunks.
+    </div>
+
+    <div class="flow">
+      <div class="flow-box bronze">
+        <strong>Guru</strong>
+        <small>Source system</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box">
+        <strong>Extract</strong>
+        <small>API or export</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box snowflake">
+        <strong>Stage</strong>
+        <small>fos_sales_content</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box">
+        <strong>Process</strong>
+        <small>Clean, normalize</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box silver">
+        <strong>Chunk</strong>
+        <small>512 tokens max</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box semantic">
+        <strong>Embed</strong>
+        <small>Cortex managed</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box gold">
+        <strong>Index</strong>
+        <small>Cortex Search</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box agent">
+        <strong>Serve</strong>
+        <small>RAG Agent</small>
+      </div>
+    </div>
+
+    <div class="flow-note">
+      <strong>Extract</strong> pulls content from Guru via API, bulk export, or manual upload.
+      <strong>Stage</strong> lands raw content in <span class="mono">fos_sales_content</span> with metadata and version tracking.
+    </div>
+
+    <div class="card-grid card-grid-4">
+      <div class="card">
+        <div class="card-title">Process</div>
+        <div class="card-desc">Strip HTML formatting. Normalize whitespace. Remove boilerplate. Detect duplicates. Mark superseded versions as <strong>is_current = FALSE</strong>.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Chunk</div>
+        <div class="card-desc">Split processed content into segments for embedding. Each chunk gets a <strong>chunk_index</strong>, <strong>section_title</strong>, and token count. Max 512 tokens per chunk.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Embed</div>
+        <div class="card-desc">Generate vector embeddings via Snowflake Cortex. Managed by Cortex Search service using <strong>snowflake-arctic-embed-l-v2.0</strong>. No external embedding needed.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Index and Serve</div>
+        <div class="card-desc">Cortex Search provides hybrid search (keyword + vector). Auto-refreshes on configurable lag. RAG Agent applies metadata filters then vector similarity.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Content Types -->
+  <div class="section" id="section-3">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <h2 class="section-title">Content Types</h2>
+    </div>
+    <div class="purpose-block">
+      Seven content types from Guru form the knowledge base. Each has different characteristics that affect chunking strategy, update cadence, and retrieval patterns.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Content Type</th>
+          <th>Description</th>
+          <th>Typical Size</th>
+          <th>Update Frequency</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Battle Cards</strong></td>
+          <td>Competitive positioning against specific competitors (Figma, Adobe, Microsoft)</td>
+          <td>2-5 pages per competitor</td>
+          <td>Monthly or on competitive landscape change</td>
+        </tr>
+        <tr>
+          <td><strong>Win/Loss Reports</strong></td>
+          <td>Post-mortem analysis of closed deals</td>
+          <td>3-8 pages per report</td>
+          <td>After each significant deal closes</td>
+        </tr>
+        <tr>
+          <td><strong>Case Studies</strong></td>
+          <td>Customer success stories by industry and use case</td>
+          <td>2-4 pages</td>
+          <td>Quarterly</td>
+        </tr>
+        <tr>
+          <td><strong>Competitive Intel</strong></td>
+          <td>Market research, analyst reports, feature comparisons</td>
+          <td>Varies widely</td>
+          <td>Ongoing</td>
+        </tr>
+        <tr>
+          <td><strong>Product Docs</strong></td>
+          <td>Feature descriptions, technical specs, security docs, compliance info</td>
+          <td>5-20 pages per doc</td>
+          <td>On product release</td>
+        </tr>
+        <tr>
+          <td><strong>Sales Methodology</strong></td>
+          <td>MEDDICC coaching, objection handling frameworks, negotiation playbooks</td>
+          <td>5-15 pages</td>
+          <td>Quarterly</td>
+        </tr>
+        <tr>
+          <td><strong>Proposal Templates</strong></td>
+          <td>Templated content blocks for proposals and one-pagers</td>
+          <td>1-3 pages</td>
+          <td>Quarterly</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>MVP scope:</strong> The pipeline is designed for Guru as the primary source and should be extensible to other sources later (Confluence, Notion, internal wikis, transcribed training recordings). Adding a new source should mean writing a new extractor, not re-architecting the pipeline.
+    </div>
+  </div>
+
+  <!-- SECTION 4: Extraction Options -->
+  <div class="section" id="section-4">
+    <div class="section-header">
+      <span class="section-number">4</span>
+      <h2 class="section-title">Extraction Options</h2>
+    </div>
+    <div class="purpose-block">
+      Four approaches for extracting content from Guru. This is the most uncertain part of the pipeline. The right approach depends on Canva's Guru instance configuration, content volume, and update patterns.
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">Option A: REST API (Card-by-Card) <span class="tag tag-decided">LIKELY PROD</span></div>
+        <div class="card-desc">
+          Schedule a Snowflake Task or cron job. Call Guru API to list cards modified since last sync. Pull full content per card. Write to staging table.<br><br>
+          <strong>Pros:</strong> Incremental sync (only pull changes). Fine-grained control. Can pull individual card metadata and tags.<br><br>
+          <strong>Cons:</strong> Card-by-card calls could be slow for large collections. No published rate limits. Requires building and maintaining API integration. HTML content needs parsing.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Option B: Collection Export (Bulk) <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          POST to export endpoint with webhook callback. Download ZIP on completion. Parse card files and diff against previous export.<br><br>
+          <strong>Pros:</strong> Gets everything in one operation. Includes folder structure and tags. Simpler than many individual API calls.<br><br>
+          <strong>Cons:</strong> Full export every time (no incremental). Requires diffing to detect changes. Async workflow with webhook adds complexity.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Option C: Manual Upload <span class="tag tag-info">MVP START</span></div>
+        <div class="card-desc">
+          Content team exports from Guru UI manually. Uploads files to S3 bucket or Snowflake internal stage. Snowflake Task detects and ingests new files.<br><br>
+          <strong>Pros:</strong> No API integration needed. Content team controls what gets indexed. Simplest to implement for MVP.<br><br>
+          <strong>Cons:</strong> Manual process, does not scale. Content can go stale between uploads. No automation. Relies on human discipline.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Option D: Webhooks (Real-Time) <span class="tag tag-risk">UNCERTAIN</span></div>
+        <div class="card-desc">
+          Register a webhook endpoint. Guru fires webhook on content events. Handler calls Guru API to pull updated card. Writes to staging and triggers re-processing.<br><br>
+          <strong>Pros:</strong> Near real-time content freshness. Event-driven (no polling). Only processes actual changes.<br><br>
+          <strong>Cons:</strong> Documented webhook events seem limited (card-copied, card-restored, link views). Not clear if card-updated or card-created events exist. Requires always-on endpoint.
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-open">
+      <strong>Recommended MVP approach:</strong> Start with <strong>Option C (manual upload)</strong> in Sprint 1 to unblock downstream pipeline development. In parallel, investigate Options A and D to determine the right automated approach. <strong>Option A (REST API with incremental sync)</strong> is the most likely production solution.
+    </div>
+  </div>
+
+  <!-- SECTION 5: Chunking Strategy -->
+  <div class="section" id="section-5">
+    <div class="section-header">
+      <span class="section-number">5</span>
+      <h2 class="section-title">Chunking Strategy</h2>
+    </div>
+    <div class="purpose-block">
+      Chunking is how we split source documents into segments for embedding and retrieval. This is a critical decision because it directly impacts retrieval quality. Bad chunks produce bad search results, which produce bad agent outputs.
+    </div>
+
+    <div class="callout callout-info">
+      <strong>Key constraint:</strong> Snowflake Cortex Search embeds only the <strong>first 512 tokens</strong> of each text entry for vector search. Content beyond 512 tokens is still indexed for keyword search but will not influence semantic similarity matching. This constraint anchors the chunking strategy.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th>Heading-Based <span class="tag tag-decided">RECOMMENDED</span></th>
+          <th>Fixed-Size (512 tokens) <span class="tag tag-tbd">FALLBACK</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>How it works</strong></td>
+          <td>Split documents at section boundaries (H1, H2, H3). Each section becomes one chunk. If a section exceeds 512 tokens, split further with overlap.</td>
+          <td>Split every document into sequential chunks of exactly 512 tokens with configurable overlap (typically 50-100 tokens).</td>
+        </tr>
+        <tr>
+          <td><strong>Simplicity</strong></td>
+          <td>Medium. Requires heading detection.</td>
+          <td>High. Easy to implement, deterministic.</td>
+        </tr>
+        <tr>
+          <td><strong>Battle Cards</strong></td>
+          <td>Excellent. Clear headings: Overview, Strengths, Weaknesses, Pricing, Objection Handling.</td>
+          <td>Poor. Sections get split mid-thought. A "Pricing Objections" section might span two chunks.</td>
+        </tr>
+        <tr>
+          <td><strong>Case Studies</strong></td>
+          <td>Good. Natural sections: Background, Challenge, Solution, Results.</td>
+          <td>Mediocre. Narrative flow gets broken arbitrarily.</td>
+        </tr>
+        <tr>
+          <td><strong>Win/Loss Reports</strong></td>
+          <td>Good. Structured with Key Findings, What Worked, What We Lost On.</td>
+          <td>Mediocre. Key findings may split across chunks.</td>
+        </tr>
+        <tr>
+          <td><strong>Retrieval Precision</strong></td>
+          <td>Higher. Each chunk is topically coherent.</td>
+          <td>Lower. Chunks may contain mixed topics.</td>
+        </tr>
+        <tr>
+          <td><strong>Requirement</strong></td>
+          <td>Source content must have consistent heading structure.</td>
+          <td>No structural requirement on source content.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-decided">
+      <strong>Recommended approach:</strong> Use <strong>heading-based chunking</strong> as the primary strategy. When a section exceeds 512 tokens, apply fixed-size splitting with 100-token overlap within that section. For documents without headings (e.g., competitive intel research notes), fall back to fixed-size chunking. This hybrid approach handles both structured and unstructured content.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Content Type</th>
+          <th>Recommended Strategy</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Battle Cards</strong></td>
+          <td>Heading-based</td>
+          <td>Highly structured, clear sections (one chunk per section)</td>
+        </tr>
+        <tr>
+          <td><strong>Win/Loss Reports</strong></td>
+          <td>Heading-based with overflow splitting</td>
+          <td>Structured but some sections run long</td>
+        </tr>
+        <tr>
+          <td><strong>Case Studies</strong></td>
+          <td>Heading-based with overflow splitting</td>
+          <td>Narrative sections may exceed 512 tokens</td>
+        </tr>
+        <tr>
+          <td><strong>Product Docs</strong></td>
+          <td>Heading-based</td>
+          <td>Technical docs are well-structured</td>
+        </tr>
+        <tr>
+          <td><strong>Sales Methodology</strong></td>
+          <td>Heading-based with overflow splitting</td>
+          <td>Mixed structure: short tips and long explanations</td>
+        </tr>
+        <tr>
+          <td><strong>Competitive Intel</strong></td>
+          <td>Fixed-size with overlap</td>
+          <td>Often unstructured research notes</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 6: Two-Stage Retrieval -->
+  <div class="section" id="section-6">
+    <div class="section-header">
+      <span class="section-number">6</span>
+      <h2 class="section-title">Two-Stage Retrieval</h2>
+    </div>
+    <div class="purpose-block">
+      The core retrieval pattern used by the RAG Agent. First narrow the search space with structured metadata filters (fast), then run vector similarity on the reduced set (precise). Faster and more accurate than a naive full-corpus vector scan.
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">Stage 1: Metadata Filter <span class="tag tag-decided">DECIDED</span></div>
+        <div class="card-desc">
+          The RAG Agent receives context from the calling agent: <strong>industry</strong>, <strong>deal stage</strong>, <strong>products</strong>, <strong>detected competitors</strong>, and <strong>request type</strong> (battle card, case study, objection handling).<br><br>
+          Using this context, the agent constructs a metadata filter:<br><br>
+          <strong>content_type</strong> IN (Battle Card, Win Report)<br>
+          <strong>competitors</strong> contains "Figma"<br>
+          <strong>industries</strong> contains "Technology"<br>
+          <strong>deal_stages</strong> contains "Negotiation"<br><br>
+          This typically reduces the search space from <strong>thousands of chunks to 20-50 relevant chunks</strong>.<br><br>
+          <strong>Performance target: under 100ms</strong>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Stage 2: Vector Similarity <span class="tag tag-decided">DECIDED</span></div>
+        <div class="card-desc">
+          With the narrowed set, run vector similarity using the actual query text (e.g., "How should we position against Figma enterprise pricing in negotiation?").<br><br>
+          Cortex Search handles this with <strong>hybrid search</strong>: vector retrieval (cosine similarity), keyword retrieval (BM25-style), and semantic reranking. Hybrid produces <strong>12%+ better accuracy</strong> than pure vector search alone.<br><br>
+          Returns <strong>top 5-10 most relevant chunks</strong> with: chunk text, source document title, source URL (link back to Guru), content type, relevance score, section title (for citation).<br><br>
+          <strong>Performance target: under 400ms</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-number">&lt;100ms</div>
+        <div class="stat-label">Stage 1 Metadata Filter</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">&lt;400ms</div>
+        <div class="stat-label">Stage 2 Vector Similarity</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">&lt;500ms</div>
+        <div class="stat-label">Total Retrieval Target</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:16px;font-weight:700;color:#2E2E38;margin-bottom:16px;">Cortex Search Service Configuration</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Value</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ON</strong></td>
+          <td><span class="mono">chunk_text</span></td>
+          <td>The text column to embed and search</td>
+        </tr>
+        <tr>
+          <td><strong>ATTRIBUTES</strong></td>
+          <td><span class="mono">content_type, industries, competitors, deal_stages, products</span></td>
+          <td>Columns available for filtering at query time</td>
+        </tr>
+        <tr>
+          <td><strong>WAREHOUSE</strong></td>
+          <td><span class="mono">fos_search_wh</span></td>
+          <td>Warehouse used for building and refreshing the index</td>
+        </tr>
+        <tr>
+          <td><strong>TARGET_LAG</strong></td>
+          <td><span class="mono">1 hour</span></td>
+          <td>How often the service checks for base table updates</td>
+        </tr>
+        <tr>
+          <td><strong>EMBEDDING_MODEL</strong></td>
+          <td><span class="mono">snowflake-arctic-embed-l-v2.0</span></td>
+          <td>Embedding model for vector index (managed by Cortex)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-open">
+      <strong>Needs validation:</strong> Cortex Search ATTRIBUTES filtering may be sufficient to replace the explicit two-stage pattern. When you query with a filter, the filter is applied before the search, meaning Stage 1 and Stage 2 could be a single API call. If built-in filtering is performant enough, we can simplify the RAG Agent. If not, we keep the explicit two-stage approach with <span class="mono">v_rag_content_catalog</span> for Stage 1 and Cortex Search for Stage 2.
+    </div>
+  </div>
+
+  <!-- SECTION 7: Open Questions -->
+  <div class="section" id="section-7">
+    <div class="section-header">
+      <span class="section-number">7</span>
+      <h2 class="section-title">Open Questions</h2>
+    </div>
+    <div class="purpose-block">
+      The RAG pipeline is the least defined part of the FOS architecture. Most decisions are preliminary or TBD. This section captures the unknowns that must be resolved before production.
+    </div>
+
+    <div class="callout callout-risk">
+      <strong>17 unknowns identified.</strong> This is the LEAST defined part of the FOS architecture. Key blockers that must be resolved before production:
+      <ul>
+        <li><strong>Guru API access</strong> -- Need credentials from Canva IT. Extraction development is blocked without this.</li>
+        <li><strong>Guru instance audit</strong> -- Unknown: card count, collection structure, tagging quality, content formats. Cannot size infrastructure or plan metadata enrichment.</li>
+        <li><strong>Chunking validation</strong> -- Need 10-20 sample Guru cards to test heading-based chunking. Do battle cards have consistent heading structures?</li>
+        <li><strong>Cortex Search ATTRIBUTES behavior</strong> -- Does built-in filtering replace explicit two-stage retrieval? Determines RAG Agent complexity.</li>
+      </ul>
+    </div>
+
+    <h3 style="font-size:16px;font-weight:700;color:#2E2E38;margin-bottom:16px;">High Impact (Blocks Implementation)</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Unknown</th>
+          <th>Why It Matters</th>
+          <th>Impact if Not Resolved</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>How to extract from Guru</strong></td>
+          <td>Determines whether the pipeline is automated or manual</td>
+          <td>Manual process does not scale, content goes stale</td>
+        </tr>
+        <tr>
+          <td><strong>Guru instance structure</strong></td>
+          <td>Determines extraction scope, metadata availability, and volume sizing</td>
+          <td>Cannot size infrastructure, cannot plan metadata enrichment</td>
+        </tr>
+        <tr>
+          <td><strong>Guru API token/access</strong></td>
+          <td>Need credentials to build and test the extraction layer</td>
+          <td>Extraction development blocked</td>
+        </tr>
+        <tr>
+          <td><strong>Chunking strategy validation</strong></td>
+          <td>Directly impacts retrieval quality</td>
+          <td>Poor chunk boundaries produce poor search results</td>
+        </tr>
+        <tr>
+          <td><strong>Cortex Search ATTRIBUTES filtering</strong></td>
+          <td>Determines RAG Agent complexity</td>
+          <td>May over-engineer the agent if Cortex handles filtering natively</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:16px;font-weight:700;color:#2E2E38;margin:24px 0 16px;">Medium Impact (Affects Quality/Performance)</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Unknown</th>
+          <th>Why It Matters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Metadata enrichment method</strong></td>
+          <td>Guru tags vs LLM classification vs manual. Quality drives retrieval precision.</td>
+        </tr>
+        <tr>
+          <td><strong>Content volume</strong></td>
+          <td>How many documents, total tokens. Affects warehouse sizing and embedding costs.</td>
+        </tr>
+        <tr>
+          <td><strong>Guru content format</strong></td>
+          <td>HTML? Markdown? Plain text? Determines processing and cleaning logic.</td>
+        </tr>
+        <tr>
+          <td><strong>Guru webhook capabilities</strong></td>
+          <td>Determines whether event-driven content refresh is possible.</td>
+        </tr>
+        <tr>
+          <td><strong>Battle card heading structure</strong></td>
+          <td>Determines viability of heading-based chunking for the most critical content type.</td>
+        </tr>
+        <tr>
+          <td><strong>Optimal overlap size</strong></td>
+          <td>Affects retrieval of concepts that span chunk boundaries.</td>
+        </tr>
+        <tr>
+          <td><strong>Single vs multiple Cortex Search services</strong></td>
+          <td>One service with filters vs separate services per content type. Architecture and maintenance complexity.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:16px;font-weight:700;color:#2E2E38;margin:24px 0 16px;">Lower Impact (Can Defer)</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Unknown</th>
+          <th>Why It Matters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Content expiration policy</strong></td>
+          <td>When should content auto-expire? Stale content remains searchable longer than ideal.</td>
+        </tr>
+        <tr>
+          <td><strong>Feedback loop design</strong></td>
+          <td>How does user feedback flow back to content curation?</td>
+        </tr>
+        <tr>
+          <td><strong>Multi-source extensibility</strong></td>
+          <td>Can we add Confluence or other sources later without refactoring?</td>
+        </tr>
+        <tr>
+          <td><strong>Content de-duplication</strong></td>
+          <td>Same content in Guru and Confluence produces duplicate chunks in search results.</td>
+        </tr>
+        <tr>
+          <td><strong>Embedding model upgrade path</strong></td>
+          <td>What happens when a better model is released? Re-embedding is a one-time cost, manageable.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">This is one of seven architecture deep dives for the Future of Sales project.</div>
+  <div class="footer-links">
+    <a class="footer-link" href="../01-data-extraction/deep-dive.html">01 Data Extraction</a>
+    <a class="footer-link" href="../02-medallion/deep-dive.html">02 Medallion</a>
+    <a class="footer-link" href="../03-semantic-layer/deep-dive.html">03 Semantic Layer</a>
+    <a class="footer-link current" href="#">04 RAG Pipeline</a>
+    <a class="footer-link" href="../05-application-layer/deep-dive.html">05 Application</a>
+    <a class="footer-link" href="../06-agent-runtime/deep-dive.html">06 Agent Runtime</a>
+    <a class="footer-link" href="../07-data-flows/deep-dive.html">07 Data Flows</a>
+  </div>
+</div>
+
+<!-- SCROLL SPY -->
+<script>
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.side-nav a');
+window.addEventListener('scroll', function() {
+  let current = '';
+  sections.forEach(function(section) {
+    const sectionTop = section.offsetTop - 100;
+    if (window.scrollY >= sectionTop) current = section.getAttribute('id');
+  });
+  navLinks.forEach(function(link) {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<div class="slide slide-light slide-scroll" id="slide-1">
+  <div class="slide-inner">
+    <div class="slide-badge-outline">Customer Journeys</div>
+    <div class="slide-title">Five moments where <span class="highlight-text">the system delivers value.</span></div>
+    <div class="slide-subtitle">
+      Click any journey to see what the user actually experiences, including mock screens.
+    </div>
+
+    <div class="journey-grid">
+
+      <!-- Journey 1: Proactive Alert -->
+      <div class="journey-card" onclick="openOverlay('overlay-proactive')">
+        <div class="journey-number">1</div>
+        <div class="journey-name">Proactive Alert</div>
+        <div class="journey-tagline">The system reaches out before a deal goes cold</div>
+        <div class="journey-scenario">A deal has had no activity for 8 days. The system detects it, generates recommendations, and sends a Slack DM to the rep.</div>
+        <div class="journey-hint">Click to see mock screen</div>
+      </div>
+
+      <!-- Journey 2: Meeting Prep -->
+      <div class="journey-card" onclick="openOverlay('overlay-prep')">
+        <div class="journey-number">2</div>
+        <div class="journey-name">Meeting Prep</div>
+        <div class="journey-tagline">The rep asks for help before a meeting</div>
+        <div class="journey-scenario">Rep types "/prep Acme Corp" in Slack. Gets a brief with stakeholder context, MEDDPICC gaps, competitor intel, and talking points.</div>
+        <div class="journey-hint">Click to see mock screen</div>
+      </div>
+
+      <!-- Journey 3: Manager Review -->
+      <div class="journey-card" onclick="openOverlay('overlay-manager')">
+        <div class="journey-number">3</div>
+        <div class="journey-name">Manager Pipeline Review</div>
+        <div class="journey-tagline">The manager spots risk before it becomes a loss</div>
+        <div class="journey-scenario">Manager opens the dashboard. Pipeline sorted by health score. Red deals at top. Clicks in, sees coaching recommendations.</div>
+        <div class="journey-hint">Click to see mock screen</div>
+      </div>
+
+      <!-- Journey 4: SE Technical Handoff -->
+      <div class="journey-card" onclick="openOverlay('overlay-se-handoff')">
+        <div class="journey-number">4</div>
+        <div class="journey-name">SE Technical Handoff</div>
+        <div class="journey-tagline">The SE gets full context without watching the recording</div>
+        <div class="journey-scenario">Agent detects technical blockers in a Gong transcript. Packages deal context, technical questions, and relevant docs. SE is looped in with everything they need.</div>
+        <div class="journey-hint">Click to see mock screen</div>
+      </div>
+
+      <!-- Journey 5: Playbook -->
+      <div class="journey-card" onclick="openOverlay('overlay-playbook')">
+        <div class="journey-number">5</div>
+        <div class="journey-name">Deal Playbook</div>
+        <div class="journey-tagline">A custom strategy guide generated for every deal</div>
+        <div class="journey-scenario">Deal moves to Proposal stage. System generates an 11-section playbook. Rep reviews, edits the competitive section, shares with the team.</div>
+        <div class="journey-hint">Click to see mock screen</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: Proactive Alert =================== -->
+<div class="overlay" id="overlay-proactive">
+  <div class="overlay-content">
+    <button class="overlay-close" onclick="closeOverlay('overlay-proactive')">&times;</button>
+    <div class="overlay-badge">Journey 1</div>
+    <div class="overlay-title">Proactive Alert: Stale Deal Detected</div>
+    <div class="overlay-scenario">
+      <strong>Scenario:</strong> The "Acme Corp - Enterprise Plan" deal has had no activity for 8 days. The rep doesn't know it's slipping. The system does.
+    </div>
+
+    <div class="overlay-flow">
+      <div class="flow-step">
+        <div class="flow-label">Detection</div>
+        <div class="flow-text">System scans all open deals every 60 minutes. Finds Acme Corp is stale at Qualification stage (threshold: 14 days, trending bad at 8 days).</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">
+        <div class="flow-label">Analysis</div>
+        <div class="flow-text">Pulls complete deal context in one query. MEDDPICC is 8/24. Missing Economic Buyer and Champion. Figma mentioned 3 times in last call.</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">
+        <div class="flow-label">Delivery</div>
+        <div class="flow-text">Slack DM sent to the Account Executive with 3 ranked recommendations and suggested actions.</div>
+      </div>
+    </div>
+
+    <div class="mock-label">What the rep sees in Slack</div>
+    <div class="mock-slack">
+      <div class="mock-slack-header">
+        <span class="mock-slack-botname">FOS Assistant</span>
+        <span class="mock-slack-time">2:34 PM</span>
+      </div>
+      <div class="mock-slack-body">
+        <div class="mock-slack-title">Acme Corp - Enterprise Plan</div>
+        <div class="mock-slack-subtitle">Health Score: 42/100 | MEDDPICC: 8/24 (33%) | Last Activity: 8 days ago</div>
+
+        <div class="mock-rec">
+          <div class="mock-rec-header">
+            <span class="mock-rec-rank">1</span>
+            <span class="mock-rec-name">Re-engage Champion</span>
+            <span class="mock-rec-priority priority-high">High Priority</span>
+          </div>
+          <div class="mock-rec-body">Sarah Chen (Champion) has not engaged for 10 days. Deals at Qualification without champion engagement have a 73% loss rate.</div>
+          <div class="mock-rec-prompt">Suggested: "Sarah, checking in on the Acme project. Can we sync this week to discuss next steps with your finance team?"</div>
+        </div>
+
+        <div class="mock-rec">
+          <div class="mock-rec-header">
+            <span class="mock-rec-rank">2</span>
+            <span class="mock-rec-name">Identify Economic Buyer</span>
+            <span class="mock-rec-priority priority-med">Medium</span>
+          </div>
+          <div class="mock-rec-body">No Economic Buyer in MEDDPICC. Ask Sarah who controls the budget for this initiative.</div>
+        </div>
+
+        <div class="mock-rec">
+          <div class="mock-rec-header">
+            <span class="mock-rec-rank">3</span>
+            <span class="mock-rec-name">Share Figma Battle Card</span>
+            <span class="mock-rec-priority priority-med">Medium</span>
+          </div>
+          <div class="mock-rec-body">Figma mentioned 3 times in last Gong call. Send competitive positioning document.</div>
+        </div>
+
+        <div class="mock-slack-actions">
+          <span class="mock-btn-thumbs">Helpful</span>
+          <span class="mock-btn-thumbs">Not Helpful</span>
+          <span class="mock-btn-action">View Full Deal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: Meeting Prep =================== -->
+<div class="overlay" id="overlay-prep">
+  <div class="overlay-content">
+    <button class="overlay-close" onclick="closeOverlay('overlay-prep')">&times;</button>
+    <div class="overlay-badge">Journey 2</div>
+    <div class="overlay-title">Meeting Prep: On-Demand Brief</div>
+    <div class="overlay-scenario">
+      <strong>Scenario:</strong> Rep has a meeting with Acme Corp tomorrow. Types "/prep Acme Corp" in Slack. Gets everything they need in 10 seconds.
+    </div>
+
+    <div class="mock-label">What the rep sees in Slack</div>
+    <div class="mock-slack">
+      <div class="mock-slack-header">
+        <span class="mock-slack-botname">You</span>
+        <span class="mock-slack-time">4:12 PM</span>
+      </div>
+      <div class="mock-slack-user-msg">/prep Acme Corp</div>
+
+      <div class="mock-slack-header" style="margin-top: 12px;">
+        <span class="mock-slack-botname">FOS Assistant</span>
+        <span class="mock-slack-time">4:12 PM</span>
+      </div>
+      <div class="mock-slack-body">
+        <div class="mock-slack-title">Meeting Prep: Acme Corp - Enterprise Plan</div>
+
+        <div class="mock-section">
+          <div class="mock-section-title">Deal Context</div>
+          <div class="mock-section-body">
+            Stage: Qualification | Amount: $180,000 | Close: Mar 15<br>
+            Health: 42/100 (Medium Risk) | MEDDPICC: 8/24 (33%)
+          </div>
+        </div>
+
+        <div class="mock-section">
+          <div class="mock-section-title">Key Stakeholders</div>
+          <div class="mock-section-body">
+            Sarah Chen (Champion) - last spoke 10 days ago<br>
+            James Park (Technical Lead) - attended last demo<br>
+            Economic Buyer - NOT YET IDENTIFIED
+          </div>
+        </div>
+
+        <div class="mock-section">
+          <div class="mock-section-title">MEDDPICC Gaps</div>
+          <div class="mock-section-body">
+            Missing: Economic Buyer (0/3), Paper Process (0/3), Decision Process (1/3)<br>
+            Strong: Identify Pain (3/3), Champion (2/3)
+          </div>
+        </div>
+
+        <div class="mock-section">
+          <div class="mock-section-title">Competitor Intel</div>
+          <div class="mock-section-body">
+            Figma mentioned 3 times in last call (pricing comparison, feature gaps)<br>
+            Battle card available: "Canva vs Figma - Enterprise Positioning"
+          </div>
+        </div>
+
+        <div class="mock-section">
+          <div class="mock-section-title">Talking Points</div>
+          <div class="mock-section-body">
+            1. Ask Sarah to identify who controls the budget<br>
+            2. Address Figma pricing concern with enterprise value story<br>
+            3. Clarify procurement and legal timeline (Paper Process)
+          </div>
+        </div>
+
+        <div class="mock-slack-actions">
+          <span class="mock-btn-action">Generate Full Playbook</span>
+          <span class="mock-btn-action">View Battle Card</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: Manager Dashboard =================== -->
+<div class="overlay" id="overlay-manager">
+  <div class="overlay-content overlay-wide">
+    <button class="overlay-close" onclick="closeOverlay('overlay-manager')">&times;</button>
+    <div class="overlay-badge">Journey 3</div>
+    <div class="overlay-title">Manager Pipeline Review</div>
+    <div class="overlay-scenario">
+      <strong>Scenario:</strong> Sales Manager opens the web dashboard on Monday morning. Sees the full pipeline sorted by health score. Spots risky deals instantly.
+    </div>
+
+    <div class="mock-label">What the manager sees in the dashboard</div>
+    <div class="mock-dashboard">
+      <div class="mock-dash-header">
+        <div class="mock-dash-title">Pipeline Health Overview</div>
+        <div class="mock-dash-stats">
+          <span class="mock-stat"><strong>47</strong> Open Deals</span>
+          <span class="mock-stat"><strong>$4.2M</strong> Pipeline Value</span>
+          <span class="mock-stat"><strong>12</strong> At Risk</span>
+          <span class="mock-stat"><strong>68%</strong> Avg MEDDPICC</span>
+        </div>
+      </div>
+
+      <table class="mock-table">
+        <thead>
+          <tr>
+            <th>Deal</th>
+            <th>Rep</th>
+            <th>Amount</th>
+            <th>Stage</th>
+            <th>Health</th>
+            <th>MEDDPICC</th>
+            <th>Days Stale</th>
+            <th>Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-critical">
+            <td>Acme Corp - Enterprise</td>
+            <td>J. Martinez</td>
+            <td>$180K</td>
+            <td>Qualification</td>
+            <td>42</td>
+            <td>33%</td>
+            <td>8</td>
+            <td><span class="risk-badge risk-high">High</span></td>
+          </tr>
+          <tr class="row-critical">
+            <td>TechFlow - Platform</td>
+            <td>S. Patel</td>
+            <td>$320K</td>
+            <td>Proposal</td>
+            <td>38</td>
+            <td>42%</td>
+            <td>5</td>
+            <td><span class="risk-badge risk-critical">Critical</span></td>
+          </tr>
+          <tr>
+            <td>GlobalRetail - Teams</td>
+            <td>A. Kim</td>
+            <td>$95K</td>
+            <td>Negotiation</td>
+            <td>71</td>
+            <td>79%</td>
+            <td>1</td>
+            <td><span class="risk-badge risk-medium">Medium</span></td>
+          </tr>
+          <tr>
+            <td>FinServ Inc - Enterprise</td>
+            <td>J. Martinez</td>
+            <td>$450K</td>
+            <td>Evaluation</td>
+            <td>84</td>
+            <td>88%</td>
+            <td>0</td>
+            <td><span class="risk-badge risk-low">Low</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="mock-dash-coaching">
+        <div class="mock-section-title">Coaching Opportunities</div>
+        <div class="mock-section-body">
+          J. Martinez has 2 deals at risk. Common gap: Economic Buyer not identified in either deal.<br>
+          S. Patel's TechFlow deal has stalled at Proposal. Last 3 calls showed competitor Figma gaining traction. Recommend battle card review.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: SE Technical Handoff =================== -->
+<div class="overlay" id="overlay-se-handoff">
+  <div class="overlay-content overlay-wide">
+    <button class="overlay-close" onclick="closeOverlay('overlay-se-handoff')">&times;</button>
+    <div class="overlay-badge">Journey 4</div>
+    <div class="overlay-title">SE Technical Handoff: Context Without the Recording</div>
+    <div class="overlay-scenario">
+      <strong>Scenario:</strong> A Gong call transcript reveals technical blockers (API limits, SSO, data residency). The system detects them, classifies as "SE Required," and packages everything the SE needs.
+    </div>
+
+    <div class="overlay-flow">
+      <div class="flow-step">
+        <div class="flow-label">Detection</div>
+        <div class="flow-text">Agent analyzes new Gong transcript. Detects technical questions about API limits, SSO integration, and data residency. Classifies as "SE Required."</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">
+        <div class="flow-label">Context Package</div>
+        <div class="flow-text">Agent builds a context package: deal summary, technical questions extracted, relevant documentation links, and suggested demo outline.</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-step">
+        <div class="flow-label">Handoff</div>
+        <div class="flow-text">AE approves SE engagement. SE receives Slack notification with full context. No need to watch the 45-minute recording.</div>
+      </div>
+    </div>
+
+    <div class="mock-label">What the AE sees in Slack</div>
+    <div class="mock-slack">
+      <div class="mock-slack-header">
+        <span class="mock-slack-botname">FOS Assistant</span>
+        <span class="mock-slack-time">11:15 AM</span>
+      </div>
+      <div class="mock-slack-body">
+        <div class="mock-slack-title">Technical Support Recommended: Acme Corp</div>
+        <div class="mock-slack-subtitle">3 technical questions detected in yesterday's call with James Park (Technical Lead)</div>
+
+        <div class="mock-rec">
+          <div class="mock-rec-header">
+            <span class="mock-rec-rank">1</span>
+            <span class="mock-rec-name">API Rate Limits</span>
+            <span class="mock-rec-priority priority-high">Blocker</span>
+          </div>
+          <div class="mock-rec-body">"What are the API rate limits for enterprise tier? We process 50K assets per day." Documentation available: API Limits Guide.</div>
+        </div>
+
+        <div class="mock-rec">
+          <div class="mock-rec-header">
+            <span class="mock-rec-rank">2</span>
+            <span class="mock-rec-name">SSO Integration</span>
+            <span class="mock-rec-priority priority-med">Technical</span>
+          </div>
+          <div class="mock-rec-body">"Can we use our Okta SSO with SAML? We need to support 200 users across 3 regions." Documentation available: SSO Setup Guide.</div>
+        </div>
+
+        <div class="mock-rec">
+          <div class="mock-rec-header">
+            <span class="mock-rec-rank">3</span>
+            <span class="mock-rec-name">Data Residency</span>
+            <span class="mock-rec-priority priority-med">Technical</span>
+          </div>
+          <div class="mock-rec-body">"Where is data stored? We have EU data residency requirements for GDPR." Documentation available: Data Residency Overview.</div>
+        </div>
+
+        <div class="mock-slack-actions">
+          <span class="mock-btn-action">Engage SE</span>
+          <span class="mock-btn-thumbs">I'll Handle It</span>
+          <span class="mock-btn-thumbs">Not Needed</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px;"></div>
+    <div class="mock-label">What the SE receives after AE approves</div>
+    <div class="mock-slack">
+      <div class="mock-slack-header">
+        <span class="mock-slack-botname">FOS Assistant</span>
+        <span class="mock-slack-time">11:18 AM</span>
+      </div>
+      <div class="mock-slack-body">
+        <div class="mock-slack-title">SE Briefing: Acme Corp - Enterprise Plan</div>
+
+        <div class="mock-section">
+          <div class="mock-section-title">Deal Context</div>
+          <div class="mock-section-body">
+            Stage: Qualification | Amount: $180,000 | Close: Mar 15<br>
+            AE: J. Martinez | Champion: Sarah Chen (VP Design)<br>
+            Technical Lead: James Park (asked the questions)
+          </div>
+        </div>
+
+        <div class="mock-section">
+          <div class="mock-section-title">Technical Questions to Address</div>
+          <div class="mock-section-body">
+            1. API rate limits for 50K assets/day workload<br>
+            2. Okta SAML SSO for 200 users across 3 regions<br>
+            3. EU data residency and GDPR compliance
+          </div>
+        </div>
+
+        <div class="mock-section">
+          <div class="mock-section-title">Suggested Demo Outline</div>
+          <div class="mock-section-body">
+            1. Show API dashboard with rate limit configuration<br>
+            2. Walk through SSO setup wizard (Okta template)<br>
+            3. Demonstrate region selector and data residency settings
+          </div>
+        </div>
+
+        <div class="mock-slack-actions">
+          <span class="mock-btn-action">Confirm Availability</span>
+          <span class="mock-btn-action">View Full Deal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== OVERLAY: Playbook =================== -->
+<div class="overlay" id="overlay-playbook">
+  <div class="overlay-content overlay-wide">
+    <button class="overlay-close" onclick="closeOverlay('overlay-playbook')">&times;</button>
+    <div class="overlay-badge">Journey 5</div>
+    <div class="overlay-title">Deal Playbook: Custom Strategy Guide</div>
+    <div class="overlay-scenario">
+      <strong>Scenario:</strong> Acme Corp deal moves to Proposal stage. The system auto-generates an 11-section playbook tailored to this deal. Rep reviews and edits before sharing.
+    </div>
+
+    <div class="mock-label">What the rep sees in the dashboard</div>
+    <div class="mock-playbook">
+      <div class="mock-pb-sidebar">
+        <div class="mock-pb-title">Acme Corp Playbook</div>
+        <div class="mock-pb-meta">Stage: Proposal | Generated: Just now</div>
+        <div class="mock-pb-toc">
+          <div class="mock-pb-toc-item active">1. Deal Summary</div>
+          <div class="mock-pb-toc-item">2. Stakeholder Map</div>
+          <div class="mock-pb-toc-item">3. Key Needs</div>
+          <div class="mock-pb-toc-item">4. Value Propositions</div>
+          <div class="mock-pb-toc-item">5. Buying Triggers</div>
+          <div class="mock-pb-toc-item">6. Competitive Comparison</div>
+          <div class="mock-pb-toc-item">7. Objection Handling</div>
+          <div class="mock-pb-toc-item">8. Talk Tracks</div>
+          <div class="mock-pb-toc-item">9. Proposal Guidance</div>
+          <div class="mock-pb-toc-item">10. Meeting Prep</div>
+          <div class="mock-pb-toc-item">11. Micro-Strategies</div>
+        </div>
+      </div>
+      <div class="mock-pb-content">
+        <div class="mock-pb-section-title">1. Deal Summary</div>
+        <div class="mock-pb-section-body">
+          <p>Acme Corp is evaluating Canva Enterprise for their 200-person design team, currently split across Figma and Adobe. The opportunity was created 45 days ago and has progressed through Discovery to Proposal. Key champion is Sarah Chen (VP Design), who is advocating internally but has not yet secured budget approval from the CFO.</p>
+          <p>Primary risk: Economic Buyer (CFO) has not been engaged. Secondary risk: Figma is actively competing on price. The deal is worth $180,000 annually with potential to expand to 500 seats ($450,000) in year two.</p>
+          <p>MEDDPICC completion is at 33% (8/24). The strongest areas are Identify Pain (3/3) and Champion (2/3). The weakest are Economic Buyer (0/3), Paper Process (0/3), and Decision Process (1/3).</p>
+        </div>
+        <div class="mock-pb-actions">
+          <span class="mock-btn-action">Edit Section</span>
+          <span class="mock-btn-action">Share with Team</span>
+          <span class="mock-btn-thumbs">Rate this Playbook</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

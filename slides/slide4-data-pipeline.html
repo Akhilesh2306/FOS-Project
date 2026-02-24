@@ -1,0 +1,204 @@
+<div class="slide slide-light slide-scroll" id="slide-4">
+  <div class="slide-inner">
+    <div class="slide-badge-outline">Data Pipeline</div>
+    <div class="slide-title">Left to right. <span class="highlight-text">Source to agent.</span></div>
+    <div class="slide-subtitle">
+      How data flows from source systems through four transformation tiers into AI-ready views. Fully Snowflake-native.
+    </div>
+
+    <div class="pipeline-flow">
+
+      <!-- Sources -->
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-header">
+          <span class="pipeline-stage-label">Sources</span>
+        </div>
+        <div class="pipeline-item">
+          <strong>Salesforce</strong>
+          <div class="pipeline-item-sub">9 objects: Account, Contact, Opportunity, Task, Event, User, OCR, Field History, Line Items</div>
+        </div>
+        <div class="pipeline-item">
+          <strong>Gong</strong>
+          <div class="pipeline-item-sub">16 objects: Calls, Transcripts, Interaction Stats, Trackers, Participants, and more</div>
+        </div>
+        <div class="pipeline-item">
+          <strong>FOS Backend</strong>
+          <div class="pipeline-item-sub">10 Hybrid Tables: NBAs, Playbooks, Health History, Events, Content, Feedback, Audit</div>
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="pipeline-arrow-line">
+          <span>&rarr;</span>
+          <div class="pipeline-arrow-label">Ingest</div>
+        </div>
+      </div>
+
+      <!-- Ingestion -->
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-header">
+          <span class="pipeline-stage-label">Ingestion</span>
+        </div>
+        <div class="pipeline-item">
+          <strong>Snowflake OpenFlow</strong>
+          <div class="pipeline-item-sub">Salesforce Bulk API connector. Native. Incremental every 15 min.</div>
+        </div>
+        <div class="pipeline-item">
+          <strong>Gong Connector (TBD)</strong>
+          <div class="pipeline-item-sub">Exploring HTTP/API options. Fivetran as fallback if needed.</div>
+        </div>
+        <div class="pipeline-item">
+          <strong>Direct Write</strong>
+          <div class="pipeline-item-sub">SPCS agents write to Hybrid Tables directly. No CDC needed.</div>
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="pipeline-arrow-line">
+          <span>&rarr;</span>
+          <div class="pipeline-arrow-label">Land</div>
+        </div>
+      </div>
+
+      <!-- Bronze -->
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-header">
+          <span class="pipeline-stage-label">Bronze</span>
+          <span class="pipeline-stage-count">35</span>
+        </div>
+        <div class="pipeline-stage-desc">Raw data. Exactly as it arrives. No transformations applied.</div>
+        <div class="pipeline-item">
+          <strong>Schema:</strong> FOS_PROD.BRONZE
+        </div>
+        <div class="pipeline-item">
+          25 from sources + 10 Hybrid Tables
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="pipeline-arrow-line">
+          <span>&rarr;</span>
+          <div class="pipeline-arrow-label">Dynamic<br>Tables</div>
+        </div>
+      </div>
+
+      <!-- Silver -->
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-header">
+          <span class="pipeline-stage-label">Silver</span>
+          <span class="pipeline-stage-count">35</span>
+        </div>
+        <div class="pipeline-stage-desc">Cleaned and standardized. Deduped, typed, computed fields. Auto-refresh.</div>
+        <div class="pipeline-item">
+          <strong>Schema:</strong> FOS_PROD.SILVER
+        </div>
+        <div class="pipeline-item">
+          Dynamic Tables. 1:1 with Bronze.
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="pipeline-arrow-line">
+          <span>&rarr;</span>
+          <div class="pipeline-arrow-label">Dynamic<br>Tables</div>
+        </div>
+      </div>
+
+      <!-- Gold -->
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-header">
+          <span class="pipeline-stage-label">Gold</span>
+          <span class="pipeline-stage-count">27</span>
+        </div>
+        <div class="pipeline-stage-desc">Business logic. Health scores, risk indicators, MEDDPICC, velocity.</div>
+        <div class="pipeline-item">
+          <strong>Schema:</strong> FOS_PROD.GOLD
+        </div>
+        <div class="pipeline-item">
+          6 domains. Auto-refresh on upstream change.
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="pipeline-arrow-line">
+          <span>&rarr;</span>
+          <div class="pipeline-arrow-label">Views</div>
+        </div>
+      </div>
+
+      <!-- Semantic -->
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-header">
+          <span class="pipeline-stage-label">Semantic</span>
+          <span class="pipeline-stage-count">11</span>
+        </div>
+        <div class="pipeline-stage-desc">AI-ready. Business-friendly names, flat structures, for LLM context.</div>
+        <div class="pipeline-item">
+          <strong>Schema:</strong> FOS_PROD.SEMANTIC
+        </div>
+        <div class="pipeline-item">
+          Agents query ONLY this layer.
+        </div>
+      </div>
+
+      <div class="pipeline-arrow">
+        <div class="pipeline-arrow-line">
+          <span>&rarr;</span>
+          <div class="pipeline-arrow-label">Query</div>
+        </div>
+      </div>
+
+      <!-- Agents -->
+      <div class="pipeline-stage">
+        <div class="pipeline-stage-header">
+          <span class="pipeline-stage-label">AI Agents</span>
+        </div>
+        <div class="pipeline-item">
+          <strong>Detection</strong>
+          <div class="pipeline-item-sub">Monitors every 60 min</div>
+        </div>
+        <div class="pipeline-item">
+          <strong>NBA</strong>
+          <div class="pipeline-item-sub">Generates recommendations</div>
+        </div>
+        <div class="pipeline-item">
+          <strong>Playbook</strong>
+          <div class="pipeline-item-sub">Creates deal guides</div>
+        </div>
+        <div class="pipeline-item">
+          <strong>RAG</strong>
+          <div class="pipeline-item-sub">Searches content library</div>
+        </div>
+        <div class="pipeline-item">
+          <strong>Feedback</strong>
+          <div class="pipeline-item-sub">Collects responses</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Refresh Schedule -->
+    <div class="pipeline-schedule">
+      <div class="pipeline-schedule-item">
+        <span class="pipeline-schedule-dot" style="background: #065F46;"></span>
+        Salesforce to Bronze: every 15 min (OpenFlow)
+      </div>
+      <div class="pipeline-schedule-item">
+        <span class="pipeline-schedule-dot" style="background: #92400E;"></span>
+        Gong to Bronze: connector TBD
+      </div>
+      <div class="pipeline-schedule-item">
+        <span class="pipeline-schedule-dot" style="background: #1E40AF;"></span>
+        Silver and Gold: Dynamic Tables auto-refresh on data change
+      </div>
+      <div class="pipeline-schedule-item">
+        <span class="pipeline-schedule-dot" style="background: #747480;"></span>
+        Semantic: views, always current on query
+      </div>
+      <div class="pipeline-schedule-item">
+        <span class="pipeline-schedule-dot" style="background: #991B1B;"></span>
+        Detection Agent: every 60 min (Snowflake Task) + Azure Event Hubs for real-time triggers
+      </div>
+    </div>
+
+  </div>
+</div>

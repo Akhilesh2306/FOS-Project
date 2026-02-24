@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Flows by Scenario - FOS Architecture Deep Dive</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#F6F6FA;color:#2E2E38;line-height:1.6}
+
+/* Side Navigation */
+.side-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100}
+.side-nav a{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;color:#747480;transition:all 0.2s;border-left:3px solid transparent}
+.side-nav a:hover{background:#EDEDF0;color:#2E2E38}
+.side-nav a.active{background:#FFF9E0;color:#2E2E38;border-left-color:#FFE600;font-weight:600}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#C8C8D0;flex-shrink:0}
+.side-nav a.active .nav-dot{background:#FFE600}
+.side-nav a:hover .nav-dot{background:#747480}
+
+/* Header */
+.header{text-align:center;padding:64px 24px 40px}
+.part-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#747480;margin-bottom:12px}
+.page-title{font-size:36px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.page-subtitle{font-size:16px;color:#747480;max-width:720px;margin:0 auto;line-height:1.6}
+
+/* Page Container */
+.page{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+/* Section */
+.section{margin-bottom:56px;scroll-margin-top:40px}
+.section-header{margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.section-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FFE600;color:#2E2E38;font-size:14px;font-weight:700;flex-shrink:0}
+.section-title{font-size:22px;font-weight:700;color:#2E2E38}
+.section-subtitle{font-size:14px;color:#747480;margin-top:4px}
+
+/* Purpose/Intro Block */
+.purpose-block{border-left:4px solid #FFE600;padding:16px 20px;background:#FFFDE6;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.7}
+
+/* Cards */
+.card-grid{display:grid;gap:16px;margin-bottom:24px}
+.card-grid-2{grid-template-columns:repeat(2,1fr)}
+.card-grid-3{grid-template-columns:repeat(3,1fr)}
+.card-grid-4{grid-template-columns:repeat(4,1fr)}
+.card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:20px;transition:box-shadow 0.2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.card-desc{font-size:12px;color:#747480;line-height:1.7}
+.card-desc strong{color:#2E2E38}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;background:#FFF;border-radius:8px;overflow:hidden;border:1px solid #E0E0E4}
+thead{background:#F0F0F4}
+th{padding:12px 16px;text-align:left;font-weight:600;color:#2E2E38;border-bottom:2px solid #E0E0E4}
+td{padding:10px 16px;border-bottom:1px solid #F0F0F4;color:#2E2E38;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#FAFAFA}
+
+/* Flow Diagram */
+.flow{display:flex;align-items:center;gap:0;padding:20px 0;overflow-x:auto;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.flow-box{padding:12px 16px;border-radius:8px;font-size:12px;text-align:center;min-width:100px;border:2px solid #E0E0E4;background:#FFF;line-height:1.5}
+.flow-box strong{display:block;font-size:13px;color:#2E2E38}
+.flow-box small{color:#747480}
+.flow-arrow{font-size:18px;color:#747480;padding:0 8px;flex-shrink:0}
+.flow-box.bronze{border-color:#FFE600;background:#FFFDE6}
+.flow-box.silver{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.gold{border-color:#FF9800;background:#FFF3E0}
+.flow-box.semantic{border-color:#6A1B9A;background:#F3E5F5}
+.flow-box.snowflake{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.azure{border-color:#0078D4;background:#E6F0FA}
+.flow-box.agent{border-color:#FF6B00;background:#FFF3E0}
+.flow-note{font-size:13px;color:#747480;margin-bottom:16px;text-align:center}
+.flow-note strong{color:#2E2E38}
+
+/* Callout Boxes */
+.callout{border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7}
+.callout ul{margin:8px 0 0 18px}
+.callout li{margin-bottom:4px}
+.callout-decided{background:#E6F9E6;border-left:4px solid #2E7D32}
+.callout-open{background:#FFF8E1;border-left:4px solid #F9A825}
+.callout-risk{background:#FDE8E8;border-left:4px solid #C62828}
+.callout-info{background:#E3F2FD;border-left:4px solid #1565C0}
+
+/* Tags */
+.tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:2px 8px;border-radius:4px;margin:0 4px 4px 0;vertical-align:middle}
+.tag-decided{background:#E6F9E6;color:#2E7D32}
+.tag-tbd{background:#FFF8E1;color:#F9A825}
+.tag-risk{background:#FDE8E8;color:#C62828}
+.tag-info{background:#E3F2FD;color:#1565C0}
+
+/* Stat Row */
+.stat-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat{text-align:center;flex:1;min-width:80px;background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:16px 12px}
+.stat-number{font-size:28px;font-weight:700;color:#2E2E38}
+.stat-label{font-size:11px;color:#747480;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* Mono text */
+.mono{font-family:'Consolas','Monaco',monospace;font-size:12px;background:#F0F0F4;padding:1px 6px;border-radius:3px}
+
+/* Column Groups (for semantic layer) */
+.col-group{background:#FFF;border:1px solid #E0E0E4;border-radius:8px;padding:14px}
+.col-group-name{font-size:13px;font-weight:700;color:#2E2E38;margin-bottom:6px}
+.col-group-item{font-size:11px;color:#747480;line-height:1.8;font-family:'Consolas',monospace}
+
+/* Hero View (for semantic layer) */
+.hero-view{background:#FFF;border:2px solid #6A1B9A;border-radius:12px;padding:24px;margin-bottom:24px}
+.hero-view-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6A1B9A;margin-bottom:4px}
+.hero-view-name{font-size:24px;font-weight:700;color:#2E2E38;margin-bottom:8px;font-family:'Consolas',monospace}
+.hero-view-desc{font-size:14px;color:#747480;margin-bottom:16px}
+
+/* Footer */
+.footer{text-align:center;padding:48px 24px;border-top:1px solid #E0E0E4;margin-top:48px}
+.footer-text{font-size:13px;color:#747480;margin-bottom:16px}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.footer-link{font-size:13px;color:#2E2E38;text-decoration:none;padding:8px 16px;border-radius:8px;background:#FFF;border:1px solid #E0E0E4;transition:all 0.2s}
+.footer-link:hover{background:#FFF9E0;border-color:#FFE600}
+.footer-link.current{background:#FFE600;font-weight:600;pointer-events:none}
+
+/* Flow card specific */
+.flow-card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:24px;transition:box-shadow 0.2s}
+.flow-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.flow-card-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.flow-card-number{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#2E2E38;color:#FFE600;font-size:12px;font-weight:700;flex-shrink:0}
+.flow-card-title{font-size:15px;font-weight:700;color:#2E2E38}
+.flow-card-type{font-size:11px;color:#747480;margin-bottom:12px;padding-left:38px}
+.flow-card-meta{display:flex;gap:16px;margin-bottom:16px;font-size:12px;color:#747480;flex-wrap:wrap}
+.flow-card-meta span strong{color:#2E2E38}
+.flow-card-desc{font-size:12px;color:#747480;line-height:1.7;margin-bottom:16px}
+
+/* Full-width card in grid */
+.flow-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
+.flow-card-full{grid-column:1/-1}
+
+/* Latency badge */
+.latency-badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;margin-left:8px}
+.latency-fast{background:#E6F9E6;color:#2E7D32}
+.latency-medium{background:#FFF8E1;color:#F9A825}
+.latency-slow{background:#FDE8E8;color:#C62828}
+
+/* Invariant cards */
+.invariant-grid-top{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.invariant-grid-bottom{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px}
+.invariant-card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:20px;transition:box-shadow 0.2s}
+.invariant-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.invariant-number{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#FFE600;color:#2E2E38;font-size:11px;font-weight:700;flex-shrink:0;margin-bottom:10px}
+.invariant-title{font-size:14px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.invariant-desc{font-size:12px;color:#747480;line-height:1.7}
+.invariant-desc strong{color:#2E2E38}
+
+/* Responsive */
+@media(max-width:1400px){.side-nav{display:none}}
+@media(max-width:1024px){
+  .card-grid-3,.card-grid-4{grid-template-columns:repeat(2,1fr)}
+  .page-title{font-size:28px}
+  .header{padding:48px 24px 32px}
+  .flow-grid{grid-template-columns:1fr}
+  .invariant-grid-top{grid-template-columns:repeat(2,1fr)}
+  .invariant-grid-bottom{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}
+  .stat-row{gap:8px}
+  .flow{flex-direction:column;align-items:stretch}
+  .flow-box{min-width:auto}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .page-title{font-size:22px}
+  .page-subtitle{font-size:14px}
+  .section-title{font-size:18px}
+  .flow-grid{grid-template-columns:1fr}
+  .invariant-grid-top,.invariant-grid-bottom{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDE NAVIGATION -->
+<nav class="side-nav">
+  <a href="#section-1" class="active"><span class="nav-dot"></span> Latency Budget</a>
+  <a href="#section-2"><span class="nav-dot"></span> Five Traced Flows</a>
+  <a href="#section-3"><span class="nav-dot"></span> Architectural Invariants</a>
+  <a href="#section-4"><span class="nav-dot"></span> Open Questions</a>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="part-label">Architecture Deep Dive 07</div>
+  <h1 class="page-title">Data Flows by Scenario</h1>
+  <p class="page-subtitle">5 real scenarios traced end to end. Every hop, every system, every latency estimate.</p>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="page">
+
+  <!-- SECTION 1: Latency Budget -->
+  <div class="section" id="section-1">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <h2 class="section-title">Latency Budget</h2>
+    </div>
+    <div class="purpose-block">
+      Every flow in the system has a measurable end-to-end latency. Synchronous flows complete in seconds. Proactive detection flows take up to 85 minutes because they depend on polling intervals. Dashboard reads are near-instant because all data is pre-computed. The table below summarizes every flow, its type, and the component that dominates wall-clock time.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Flow</th>
+          <th>Type</th>
+          <th>End-to-End Latency</th>
+          <th>Dominant Factor</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Stalled Deal Detection</strong></td>
+          <td>Proactive</td>
+          <td>45 to 85 min <span class="latency-badge latency-slow">slow</span></td>
+          <td>Detection Agent 60-min scan interval</td>
+        </tr>
+        <tr>
+          <td><strong>2. Meeting Prep</strong></td>
+          <td>Synchronous</td>
+          <td>3 to 6 sec <span class="latency-badge latency-fast">fast</span></td>
+          <td>LLM inference (2 to 4 sec)</td>
+        </tr>
+        <tr>
+          <td><strong>3. Stage Change Playbook</strong></td>
+          <td>Event-driven</td>
+          <td>45 to 85 min + 12 to 20 sec <span class="latency-badge latency-slow">slow</span></td>
+          <td>Detection scan + LLM inference for 11 sections</td>
+        </tr>
+        <tr>
+          <td><strong>4. SE Technical Handoff</strong></td>
+          <td>Detection + Human</td>
+          <td>2 to 4 hours <span class="latency-badge latency-medium">variable</span></td>
+          <td>Gong processing + sync + AE approval time</td>
+        </tr>
+        <tr>
+          <td><strong>5. Manager Dashboard</strong></td>
+          <td>Read-only</td>
+          <td>&lt;500 ms <span class="latency-badge latency-fast">fast</span></td>
+          <td>Pre-computed data, Snowflake query time</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Key Insight Callout -->
+    <div class="callout callout-decided">
+      <strong>Key Insight</strong>
+      <ul>
+        <li>Synchronous flows are fast (3 to 6 seconds) because they bypass the Detection Agent and go directly to an agent.</li>
+        <li>Proactive flows are slower (45 to 85 minutes) because the 60-minute Detection Agent scan interval dominates wall-clock time.</li>
+        <li>Dashboard reads are near-instant (&lt;500 ms) because they consume pre-computed data with no agent execution.</li>
+        <li>The LLM is the single largest latency contributor in every flow that generates text. Optimizing LLM inference (model selection, prompt engineering, caching) has the highest return on latency improvement.</li>
+      </ul>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-number">5</div>
+        <div class="stat-label">Traced Flows</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">14</div>
+        <div class="stat-label">Max Hops (Flow 1)</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">&lt;500ms</div>
+        <div class="stat-label">Dashboard Read</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">2-4s</div>
+        <div class="stat-label">LLM Inference</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">60min</div>
+        <div class="stat-label">Detection Scan</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Five Traced Flows -->
+  <div class="section" id="section-2">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <h2 class="section-title">Five Traced Flows</h2>
+    </div>
+    <div class="purpose-block">
+      Each flow is traced from the triggering event to the final human-visible result. Every intermediate system is named, every table touched is listed, and every handoff between components is explicit. These traces tie together ingestion, the medallion layers, the semantic layer, the agents, and the delivery channels into coherent, verifiable paths.
+    </div>
+
+    <!-- Flow cards: 2x2 grid + 1 full-width -->
+    <div class="flow-grid">
+
+      <!-- Flow 1: Stalled Deal Detection -->
+      <div class="flow-card">
+        <div class="flow-card-header">
+          <span class="flow-card-number">1</span>
+          <span class="flow-card-title">Stalled Deal Detection</span>
+        </div>
+        <div class="flow-card-type">Proactive, event-driven</div>
+        <div class="flow-card-meta">
+          <span><strong>Trigger:</strong> No activity for 8+ days</span>
+          <span><strong>Result:</strong> AE gets Slack DM with 3 ranked NBAs</span>
+        </div>
+        <div class="flow">
+          <div class="flow-box snowflake"><strong>SFDC</strong><small>Source of truth</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box bronze"><strong>OpenFlow</strong><small>15-min sync</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box silver"><strong>Medallion</strong><small>Bronze &gt; Silver &gt; Gold</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box agent"><strong>Detection</strong><small>60-min scan</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box azure"><strong>Event Hubs</strong><small>Coordination bus</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box agent"><strong>NBA Agent</strong><small>LLM generation</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box"><strong>Slack DM</strong><small>AE notification</small></div>
+        </div>
+        <div class="flow-note"><strong>Worst case:</strong> ~85 min trigger to notification. <strong>After detection:</strong> 5 to 7 sec.</div>
+        <div class="flow-card-desc">
+          The absence of activity is the signal. OpenFlow syncs Salesforce every 15 minutes. Silver computes <strong>days_since_last_activity</strong> and <strong>is_stale</strong>. Gold computes the AHP-weighted health score (42/100 for the example deal). The Detection Agent scans the Semantic layer hourly, finds matching deals, writes to the <strong>fos_agent_events</strong> Hybrid Table, and publishes to Event Hubs. The NBA Agent consumes, fetches full deal context from <strong>v_opportunity_llm_context</strong>, generates 3 ranked recommendations via Cortex LLM, persists them to <strong>fos_next_best_actions</strong>, and triggers the Slack notification.
+        </div>
+      </div>
+
+      <!-- Flow 2: Meeting Prep -->
+      <div class="flow-card">
+        <div class="flow-card-header">
+          <span class="flow-card-number">2</span>
+          <span class="flow-card-title">On-Demand Meeting Prep</span>
+        </div>
+        <div class="flow-card-type">Synchronous, user-initiated</div>
+        <div class="flow-card-meta">
+          <span><strong>Trigger:</strong> AE types /prep Acme Corp</span>
+          <span><strong>Result:</strong> Structured brief in Slack within 10 sec</span>
+        </div>
+        <div class="flow">
+          <div class="flow-box"><strong>Slack</strong><small>/prep command</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box azure"><strong>Bot</strong><small>Azure Container</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box snowflake"><strong>SPCS API</strong><small>FastAPI server</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box agent"><strong>NBA Agent</strong><small>Meeting prep mode</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box semantic"><strong>Cortex LLM</strong><small>Brief generation</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box"><strong>Slack</strong><small>Block Kit response</small></div>
+        </div>
+        <div class="flow-note"><strong>Typical:</strong> 3 to 6 sec. <strong>Target:</strong> under 10 sec. <strong>Bottleneck:</strong> LLM inference (2 to 4 sec).</div>
+        <div class="flow-card-desc">
+          The fastest flow. Slack immediately acknowledges the slash command (3-second requirement). The Bot forwards to SPCS FastAPI, which routes to the NBA Agent in meeting-prep mode. The agent queries <strong>v_opportunity_llm_context</strong> for deal data, <strong>v_gong_call_insights</strong> for conversation history, and Cortex Search for battle cards. Cortex LLM generates a structured brief with Deal Context, Stakeholders, MEDDPICC Gaps, Competitor Intel, and Talking Points. The response flows back through the chain to a Slack Block Kit message.
+        </div>
+      </div>
+
+      <!-- Flow 3: Stage Change Playbook -->
+      <div class="flow-card">
+        <div class="flow-card-header">
+          <span class="flow-card-number">3</span>
+          <span class="flow-card-title">Stage Change Playbook</span>
+        </div>
+        <div class="flow-card-type">Event-driven + LLM generation</div>
+        <div class="flow-card-meta">
+          <span><strong>Trigger:</strong> AE updates stage in Salesforce</span>
+          <span><strong>Result:</strong> 11-section playbook generated and AE notified</span>
+        </div>
+        <div class="flow">
+          <div class="flow-box snowflake"><strong>SFDC</strong><small>Stage changed</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box silver"><strong>Medallion</strong><small>Bronze &gt; Silver &gt; Gold</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box agent"><strong>Detection</strong><small>60-min scan</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box azure"><strong>Event Hubs</strong><small>stage_change topic</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box agent"><strong>Playbook</strong><small>11-section LLM gen</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box"><strong>Notify</strong><small>Slack DM + Dashboard</small></div>
+        </div>
+        <div class="flow-note"><strong>Worst case:</strong> ~85 min SFDC to notification. <strong>After detection:</strong> 12 to 20 sec (LLM generates 2000-5000 tokens).</div>
+        <div class="flow-card-desc">
+          The Playbook Agent is the most intensive flow. It fetches deal context, stakeholder details, competitive intelligence via Cortex Search, and methodology content. Then it calls Cortex LLM to generate all 11 sections: Deal Summary, Stakeholder Map, Key Needs, Value Propositions, Buying Triggers, Competitive Comparison, Objection Handling, Talk Tracks, Proposal Guidance, Meeting Prep, and Micro-Strategies. The playbook is stored in <strong>fos_playbooks</strong> (Hybrid Table) and viewable on the Web Dashboard. The Slack notification is concise because the full playbook is too large for a message.
+        </div>
+      </div>
+
+      <!-- Flow 4: SE Technical Handoff -->
+      <div class="flow-card">
+        <div class="flow-card-header">
+          <span class="flow-card-number">4</span>
+          <span class="flow-card-title">SE Technical Handoff</span>
+        </div>
+        <div class="flow-card-type">Detection + Human Approval + Routing</div>
+        <div class="flow-card-meta">
+          <span><strong>Trigger:</strong> Technical questions in Gong transcript</span>
+          <span><strong>Result:</strong> SE gets full context package without watching recording</span>
+        </div>
+        <div class="flow">
+          <div class="flow-box"><strong>Gong</strong><small>Transcript ready</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box silver"><strong>Medallion</strong><small>Bronze &gt; Silver &gt; Gold</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box agent"><strong>Detection</strong><small>Technical signals</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box agent"><strong>NBA Agent</strong><small>Package context</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box"><strong>AE Approval</strong><small>Human-in-the-loop</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box"><strong>SE DM</strong><small>Full briefing package</small></div>
+        </div>
+        <div class="flow-note"><strong>Typical:</strong> 2 to 4 hours (Gong + sync + human wait). <strong>Automated portion:</strong> ~10 to 15 sec.</div>
+        <div class="flow-card-desc">
+          The only flow with a human-in-the-loop gate. After Gong processes the transcript (10 to 30 min) and the connector syncs to Snowflake (up to 60 min), the Detection Agent scans for technical blocker signals: keywords like "API", "rate limit", "SSO", "GDPR", and dense question patterns. The NBA Agent packages the questions with documentation links and sends the AE a Slack message with <strong>Engage SE</strong>, <strong>I'll Handle It</strong>, and <strong>Not Needed</strong> buttons. The SE is not notified until the AE explicitly approves. After approval, a second agent packages the full context and sends the SE briefing.
+        </div>
+      </div>
+
+      <!-- Flow 5: Manager Dashboard (full-width) -->
+      <div class="flow-card flow-card-full">
+        <div class="flow-card-header">
+          <span class="flow-card-number">5</span>
+          <span class="flow-card-title">Manager Dashboard</span>
+        </div>
+        <div class="flow-card-type">Read-only, &lt;500 ms</div>
+        <div class="flow-card-meta">
+          <span><strong>Trigger:</strong> Manager opens Web Dashboard</span>
+          <span><strong>Result:</strong> Pipeline sorted by health, drill into at-risk deals, coaching recs</span>
+          <span><strong>Key pattern:</strong> Entirely READ. No agents write during this flow.</span>
+        </div>
+        <div class="flow">
+          <div class="flow-box"><strong>Browser</strong><small>Manager opens dashboard</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box snowflake"><strong>FastAPI</strong><small>SPCS, parallel queries</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box semantic"><strong>Semantic Layer</strong><small>v_pipeline_overview, v_deal_health_summary</small></div>
+          <span class="flow-arrow">&#8594;</span>
+          <div class="flow-box"><strong>Render</strong><small>Client-side, &lt;100 ms</small></div>
+        </div>
+        <div class="flow-note"><strong>Total perceived latency:</strong> under 500 ms. All data pre-computed by proactive flows. No LLM calls, no writes.</div>
+        <div class="flow-card-desc">
+          The simplest flow. All deal data was already processed throughout the week: OpenFlow synced every 15 minutes, Dynamic Tables auto-refreshed, Detection Agents fired hourly, and health scores are current. The dashboard makes parallel API calls for pipeline overview (47 open deals, $4.2M value, 12 at-risk), deals sorted by health score, and coaching opportunities (reps with multiple at-risk deals, common MEDDPICC gaps). Drill-down into a deal triggers 6 parallel queries (overview, health breakdown, active NBAs, stakeholders, activities, Gong summaries), each returning in 50 to 150 ms. The manager uses this to prepare for 1:1 coaching conversations.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Architectural Invariants -->
+  <div class="section" id="section-3">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <h2 class="section-title">Architectural Invariants</h2>
+    </div>
+    <div class="purpose-block">
+      Five patterns repeat across all five flows. These are not guidelines or suggestions. They are structural invariants that every component in the system respects. Violating any of these patterns means the data trace breaks.
+    </div>
+
+    <!-- 3+2 grid -->
+    <div class="invariant-grid-top">
+      <div class="invariant-card">
+        <span class="invariant-number">1</span>
+        <div class="invariant-title">Semantic Layer = Single Query Interface</div>
+        <div class="invariant-desc">
+          Every flow that reads deal data goes through the Semantic layer. The Detection Agent queries Semantic views to find triggers. The NBA Agent queries <strong>v_opportunity_llm_context</strong> for deal context. The Dashboard queries <strong>v_pipeline_overview</strong> and <strong>v_deal_health_summary</strong>. No component queries Bronze, Silver, or Gold directly. The Semantic layer is the single source of truth for all consumers.
+        </div>
+      </div>
+
+      <div class="invariant-card">
+        <span class="invariant-number">2</span>
+        <div class="invariant-title">Event Hubs = Coordination Bus</div>
+        <div class="invariant-desc">
+          All agent-to-agent communication flows through Azure Event Hubs. Detection publishes, NBA and Playbook consume. Agents publish notifications, Slack Bot consumes. This decouples producers from consumers. Adding a new consumer (e.g., a Microsoft Teams bot) means subscribing to the same topics. No existing component changes.
+        </div>
+      </div>
+
+      <div class="invariant-card">
+        <span class="invariant-number">3</span>
+        <div class="invariant-title">Hybrid Tables = Write Target</div>
+        <div class="invariant-desc">
+          Every agent write goes to a Hybrid Table in the Bronze schema: <strong>fos_agent_events</strong>, <strong>fos_next_best_actions</strong>, <strong>fos_playbooks</strong>, <strong>fos_feedback_log</strong>, <strong>fos_audit_log</strong>. Hybrid Tables provide ACID writes with millisecond latency. These tables feed back into the medallion pipeline (Dynamic Tables refresh when Hybrid Tables change), creating the intentional write-back loop.
+        </div>
+      </div>
+    </div>
+
+    <div class="invariant-grid-bottom">
+      <div class="invariant-card">
+        <span class="invariant-number">4</span>
+        <div class="invariant-title">Cortex LLM = Generation Engine</div>
+        <div class="invariant-desc">
+          Any flow that produces natural language output (NBA recommendations, meeting prep briefs, playbooks, SE briefing packages) uses Cortex LLM for generation. Data never leaves the Snowflake security perimeter. The LLM is always the latency bottleneck (2 to 15 seconds depending on output size), but it is also where the core value is created.
+        </div>
+      </div>
+
+      <div class="invariant-card">
+        <span class="invariant-number">5</span>
+        <div class="invariant-title">Degraded-but-Functional Fallback</div>
+        <div class="invariant-desc">
+          Every flow has a fallback when the LLM or a search service is unavailable. The fallback is always "return the structured data from the Semantic layer without LLM synthesis." For example, if Cortex LLM times out during meeting prep, the AE still gets the raw deal context, MEDDPICC scores, and stakeholder list. Less polished but still useful.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Open Questions -->
+  <div class="section" id="section-4">
+    <div class="section-header">
+      <span class="section-number">4</span>
+      <h2 class="section-title">Open Questions</h2>
+    </div>
+    <div class="purpose-block">
+      These are unresolved design questions that affect the latency, reliability, or scope of one or more flows. Each question needs research and a decision before the corresponding flow can be considered production-ready.
+    </div>
+
+    <div class="callout callout-open">
+      <strong>Open Questions</strong>
+      <ul>
+        <li><strong>Can detection go to 15 to 30 minutes?</strong> The current 60-minute scan interval dominates proactive flow latency. Reducing to 15 or 30 minutes cuts worst-case latency in half but increases compute cost. What is the cost per scan for a 1,000-deal pipeline? For 10,000 deals?</li>
+        <li><strong>Can Salesforce Platform Events supplement polling?</strong> Real-time triggers from Salesforce (via Platform Events or Change Data Capture) pushed to Event Hubs would reduce proactive flow latency from 75 minutes to seconds. This would fundamentally change Flows 1 and 3.</li>
+        <li><strong>Parallel vs. sequential playbook sections?</strong> The 11-section playbook is a large LLM generation (2,000 to 5,000 tokens). Should sections be generated in parallel (multiple smaller LLM calls) or sequentially (one large prompt)? What is the quality vs. latency tradeoff?</li>
+        <li><strong>Notification deduplication across channels?</strong> If a manager views an at-risk deal on the dashboard (Flow 5) and the AE gets a Slack notification about the same deal (Flow 1), is there coordination? Should the manager's view show "AE was notified at 2:34 PM"?</li>
+        <li><strong>Fallback LLM?</strong> If Cortex LLM is unavailable, do we have a secondary path? Routing to an external LLM (e.g., direct Anthropic API) is an option, but data would leave the Snowflake security perimeter temporarily. Is that acceptable?</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">This is one of seven architecture deep dives for the Future of Sales project.</div>
+  <div class="footer-links">
+    <a class="footer-link" href="../01-data-extraction/deep-dive.html">01 Data Extraction</a>
+    <a class="footer-link" href="../02-medallion/deep-dive.html">02 Medallion</a>
+    <a class="footer-link" href="../03-semantic-layer/deep-dive.html">03 Semantic Layer</a>
+    <a class="footer-link" href="../04-rag-pipeline/deep-dive.html">04 RAG Pipeline</a>
+    <a class="footer-link" href="../05-application-layer/deep-dive.html">05 Application</a>
+    <a class="footer-link" href="../06-agent-runtime/deep-dive.html">06 Agent Runtime</a>
+    <a class="footer-link current" href="#">07 Data Flows</a>
+  </div>
+</div>
+
+<!-- SCROLL SPY -->
+<script>
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.side-nav a');
+window.addEventListener('scroll', function() {
+  let current = '';
+  sections.forEach(function(section) {
+    const sectionTop = section.offsetTop - 100;
+    if (window.scrollY >= sectionTop) current = section.getAttribute('id');
+  });
+  navLinks.forEach(function(link) {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

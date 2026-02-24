@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Extraction Pipeline - FOS Architecture Deep Dive</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#F6F6FA;color:#2E2E38;line-height:1.6}
+
+/* Side Navigation */
+.side-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100}
+.side-nav a{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;color:#747480;transition:all 0.2s;border-left:3px solid transparent}
+.side-nav a:hover{background:#EDEDF0;color:#2E2E38}
+.side-nav a.active{background:#FFF9E0;color:#2E2E38;border-left-color:#FFE600;font-weight:600}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#C8C8D0;flex-shrink:0}
+.side-nav a.active .nav-dot{background:#FFE600}
+.side-nav a:hover .nav-dot{background:#747480}
+
+/* Header */
+.header{text-align:center;padding:64px 24px 40px}
+.part-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#747480;margin-bottom:12px}
+.page-title{font-size:36px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.page-subtitle{font-size:16px;color:#747480;max-width:720px;margin:0 auto;line-height:1.6}
+
+/* Page Container */
+.page{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+/* Section */
+.section{margin-bottom:56px;scroll-margin-top:40px}
+.section-header{margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.section-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FFE600;color:#2E2E38;font-size:14px;font-weight:700;flex-shrink:0}
+.section-title{font-size:22px;font-weight:700;color:#2E2E38}
+.section-subtitle{font-size:14px;color:#747480;margin-top:4px}
+
+/* Purpose/Intro Block */
+.purpose-block{border-left:4px solid #FFE600;padding:16px 20px;background:#FFFDE6;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.7}
+
+/* Cards */
+.card-grid{display:grid;gap:16px;margin-bottom:24px}
+.card-grid-2{grid-template-columns:repeat(2,1fr)}
+.card-grid-3{grid-template-columns:repeat(3,1fr)}
+.card-grid-4{grid-template-columns:repeat(4,1fr)}
+.card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:20px;transition:box-shadow 0.2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.card-desc{font-size:12px;color:#747480;line-height:1.7}
+.card-desc strong{color:#2E2E38}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;background:#FFF;border-radius:8px;overflow:hidden;border:1px solid #E0E0E4}
+thead{background:#F0F0F4}
+th{padding:12px 16px;text-align:left;font-weight:600;color:#2E2E38;border-bottom:2px solid #E0E0E4}
+td{padding:10px 16px;border-bottom:1px solid #F0F0F4;color:#2E2E38;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#FAFAFA}
+
+/* Flow Diagram */
+.flow{display:flex;align-items:center;gap:0;padding:20px 0;overflow-x:auto;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.flow-box{padding:12px 16px;border-radius:8px;font-size:12px;text-align:center;min-width:100px;border:2px solid #E0E0E4;background:#FFF;line-height:1.5}
+.flow-box strong{display:block;font-size:13px;color:#2E2E38}
+.flow-box small{color:#747480}
+.flow-arrow{font-size:18px;color:#747480;padding:0 8px;flex-shrink:0}
+.flow-box.bronze{border-color:#FFE600;background:#FFFDE6}
+.flow-box.silver{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.gold{border-color:#FF9800;background:#FFF3E0}
+.flow-box.semantic{border-color:#6A1B9A;background:#F3E5F5}
+.flow-box.snowflake{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.azure{border-color:#0078D4;background:#E6F0FA}
+.flow-box.agent{border-color:#FF6B00;background:#FFF3E0}
+.flow-note{font-size:13px;color:#747480;margin-bottom:16px;text-align:center}
+.flow-note strong{color:#2E2E38}
+
+/* Callout Boxes */
+.callout{border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7}
+.callout ul{margin:8px 0 0 18px}
+.callout li{margin-bottom:4px}
+.callout-decided{background:#E6F9E6;border-left:4px solid #2E7D32}
+.callout-open{background:#FFF8E1;border-left:4px solid #F9A825}
+.callout-risk{background:#FDE8E8;border-left:4px solid #C62828}
+.callout-info{background:#E3F2FD;border-left:4px solid #1565C0}
+
+/* Tags */
+.tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:2px 8px;border-radius:4px;margin:0 4px 4px 0;vertical-align:middle}
+.tag-decided{background:#E6F9E6;color:#2E7D32}
+.tag-tbd{background:#FFF8E1;color:#F9A825}
+.tag-risk{background:#FDE8E8;color:#C62828}
+.tag-info{background:#E3F2FD;color:#1565C0}
+
+/* Stat Row */
+.stat-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat{text-align:center;flex:1;min-width:80px;background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:16px 12px}
+.stat-number{font-size:28px;font-weight:700;color:#2E2E38}
+.stat-label{font-size:11px;color:#747480;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* Mono text */
+.mono{font-family:'Consolas','Monaco',monospace;font-size:12px;background:#F0F0F4;padding:1px 6px;border-radius:3px}
+
+/* Column Groups (for semantic layer) */
+.col-group{background:#FFF;border:1px solid #E0E0E4;border-radius:8px;padding:14px}
+.col-group-name{font-size:13px;font-weight:700;color:#2E2E38;margin-bottom:6px}
+.col-group-item{font-size:11px;color:#747480;line-height:1.8;font-family:'Consolas',monospace}
+
+/* Hero View (for semantic layer) */
+.hero-view{background:#FFF;border:2px solid #6A1B9A;border-radius:12px;padding:24px;margin-bottom:24px}
+.hero-view-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6A1B9A;margin-bottom:4px}
+.hero-view-name{font-size:24px;font-weight:700;color:#2E2E38;margin-bottom:8px;font-family:'Consolas',monospace}
+.hero-view-desc{font-size:14px;color:#747480;margin-bottom:16px}
+
+/* Footer */
+.footer{text-align:center;padding:48px 24px;border-top:1px solid #E0E0E4;margin-top:48px}
+.footer-text{font-size:13px;color:#747480;margin-bottom:16px}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.footer-link{font-size:13px;color:#2E2E38;text-decoration:none;padding:8px 16px;border-radius:8px;background:#FFF;border:1px solid #E0E0E4;transition:all 0.2s}
+.footer-link:hover{background:#FFF9E0;border-color:#FFE600}
+.footer-link.current{background:#FFE600;font-weight:600;pointer-events:none}
+
+/* Responsive */
+@media(max-width:1400px){.side-nav{display:none}}
+@media(max-width:1024px){
+  .card-grid-3,.card-grid-4{grid-template-columns:repeat(2,1fr)}
+  .page-title{font-size:28px}
+  .header{padding:48px 24px 32px}
+}
+@media(max-width:640px){
+  .card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}
+  .stat-row{gap:8px}
+  .flow{flex-direction:column;align-items:stretch}
+  .flow-box{min-width:auto}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .page-title{font-size:22px}
+  .page-subtitle{font-size:14px}
+  .section-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDE NAVIGATION -->
+<nav class="side-nav">
+  <a href="#section-1" class="active"><span class="nav-dot"></span> Ingestion Paths</a>
+  <a href="#section-2"><span class="nav-dot"></span> Source Objects</a>
+  <a href="#section-3"><span class="nav-dot"></span> Latency Timeline</a>
+  <a href="#section-4"><span class="nav-dot"></span> MEDDPICC Validation</a>
+  <a href="#section-5"><span class="nav-dot"></span> Refresh Schedules</a>
+  <a href="#section-6"><span class="nav-dot"></span> Decisions</a>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="part-label">Architecture Deep Dive 01</div>
+  <h1 class="page-title">Data Extraction Pipeline</h1>
+  <p class="page-subtitle">How data enters Snowflake from Salesforce, Gong, and Guru. 3 ingestion paths, 35 Bronze tables, worst-case latency 75 to 90 minutes.</p>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="page">
+
+  <!-- STAT ROW -->
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-number">3</div>
+      <div class="stat-label">Source Systems</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">35</div>
+      <div class="stat-label">Bronze Tables</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">3</div>
+      <div class="stat-label">Ingestion Paths</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: Ingestion Paths -->
+  <div class="section" id="section-1">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <h2 class="section-title">Ingestion Paths</h2>
+    </div>
+    <div class="purpose-block">
+      There are three paths into the system. Each has a different source, connector, target, and level of readiness. Salesforce and Gong data land in Bronze as relational tables. Guru content does NOT go to Bronze. It gets chunked, embedded, and indexed directly into Cortex Search for vector similarity retrieval (RAG).
+    </div>
+
+    <div class="card-grid card-grid-3">
+      <!-- Card 1: Salesforce -->
+      <div class="card">
+        <div class="card-title">Salesforce <span class="tag tag-decided">Decided</span></div>
+        <div class="card-desc">
+          <strong>Connector:</strong> Snowflake OpenFlow (Managed Apache NiFi, Bulk API)<br>
+          <strong>Target:</strong> FOS_PROD.BRONZE<br>
+          <strong>Frequency:</strong> Every 15 min<br>
+          <strong>Data Type:</strong> 9 structured objects (CRM data)<br>
+          <strong>Load Strategy:</strong> Incremental (CDC)<br><br>
+          OpenFlow is Snowflake's native data integration service. Under the hood, it is a managed Apache NiFi instance. The pre-built Salesforce connector uses the Salesforce Bulk API for high-volume extraction with incremental sync (CDC), pulling only records that changed since the last sync.
+        </div>
+      </div>
+      <!-- Card 2: Gong -->
+      <div class="card">
+        <div class="card-title">Gong <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          <strong>Connector:</strong> TBD (HTTP/API custom connector, Fivetran, or Gong Data Cloud)<br>
+          <strong>Target:</strong> FOS_PROD.BRONZE<br>
+          <strong>Frequency:</strong> TBD<br>
+          <strong>Data Type:</strong> 16 structured objects (call data, transcripts, intelligence)<br>
+          <strong>Load Strategy:</strong> TBD<br><br>
+          OpenFlow does not have a Gong connector today. Three options are on the table: HTTP/API custom connector via OpenFlow, Fivetran's existing Gong connector, or Gong Data Cloud (zero-copy data sharing into Snowflake).
+        </div>
+      </div>
+      <!-- Card 3: Guru -->
+      <div class="card">
+        <div class="card-title">Guru / Knowledge Base <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          <strong>Connector:</strong> TBD (Guru API, manual export, or batch loader)<br>
+          <strong>Target:</strong> Cortex Search index (NOT Bronze)<br>
+          <strong>Frequency:</strong> On content update<br>
+          <strong>Data Type:</strong> Battle cards, case studies, win/loss reports, competitive intel<br>
+          <strong>Load Strategy:</strong> Full re-index on change<br><br>
+          Guru content is unstructured text meant for vector similarity search (RAG). Content goes through: Extract, Chunk, Embed (via Snowflake's embedding model), and Index into Cortex Search for fast similarity retrieval.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Source Objects -->
+  <div class="section" id="section-2">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <h2 class="section-title">Source Objects</h2>
+    </div>
+    <div class="purpose-block">
+      All structured data lands in <span class="mono">FOS_PROD.BRONZE</span>. This is the raw layer. No transformations, no business logic, no computed fields. Data is stored exactly as it arrives from the source system. There are 35 total Bronze tables across three categories.
+    </div>
+
+    <!-- SFDC Objects Table -->
+    <h3 style="font-size:15px;font-weight:700;color:#2E2E38;margin-bottom:12px;">Salesforce (9 tables via OpenFlow Bulk API)</h3>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Table</th><th>API Name</th><th>Purpose in FOS</th><th>Key Fields</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Account</td><td><span class="mono">Account</span></td><td>Company records, ICP matching, industry context</td><td>id, name, industry, type, annual_revenue, number_of_employees</td></tr>
+        <tr><td>2</td><td>Contact</td><td><span class="mono">Contact</span></td><td>Stakeholder mapping, champion identification</td><td>id, name, title, email, account_id</td></tr>
+        <tr><td>3</td><td>Opportunity</td><td><span class="mono">Opportunity</span></td><td>Core deal records, stage tracking, health scoring</td><td>id, name, stage_name, amount, close_date, owner_id, is_closed, is_won</td></tr>
+        <tr><td>4</td><td>Task</td><td><span class="mono">Task</span></td><td>Activity tracking (calls, emails, to-dos)</td><td>id, subject, status, who_id, what_id, activity_date</td></tr>
+        <tr><td>5</td><td>Event</td><td><span class="mono">Event</span></td><td>Meeting tracking, calendar activity</td><td>id, subject, start_date_time, end_date_time, who_id, what_id</td></tr>
+        <tr><td>6</td><td>User</td><td><span class="mono">User</span></td><td>AE/SE lookup, owner resolution, manager hierarchy</td><td>id, name, email, title, manager_id, is_active</td></tr>
+        <tr><td>7</td><td>OpportunityContactRole</td><td><span class="mono">OpportunityContactRole</span></td><td>Stakeholder-to-deal mapping with role labels</td><td>id, opportunity_id, contact_id, role, is_primary</td></tr>
+        <tr><td>8</td><td>OpportunityFieldHistory</td><td><span class="mono">OpportunityFieldHistory</span></td><td>Stage change tracking, field audit trail</td><td>id, opportunity_id, field, old_value, new_value, created_date</td></tr>
+        <tr><td>9</td><td>OpportunityLineItem</td><td><span class="mono">OpportunityLineItem</span></td><td>Product associations on deals</td><td>id, opportunity_id, product_2_id, quantity, total_price</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Gong Objects Table -->
+    <h3 style="font-size:15px;font-weight:700;color:#2E2E38;margin-bottom:12px;">Gong (16 tables, connector TBD)</h3>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Table</th><th>Source File</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><span class="mono">gong_conversations</span></td><td>core</td><td>Parent table for all conversation types (calls, emails, meetings)</td></tr>
+        <tr><td>2</td><td><span class="mono">gong_calls</span></td><td>core</td><td>Call metadata, Spotlight AI summaries, key points, next steps</td></tr>
+        <tr><td>3</td><td><span class="mono">gong_call_recordings</span></td><td>core</td><td>Recording duration, language, media type</td></tr>
+        <tr><td>4</td><td><span class="mono">gong_call_transcripts</span></td><td>core</td><td>Full transcripts with speaker identification and timestamps</td></tr>
+        <tr><td>5</td><td><span class="mono">gong_users</span></td><td>users</td><td>User profiles, settings, manager hierarchy (SCD Type 2)</td></tr>
+        <tr><td>6</td><td><span class="mono">gong_user_crm_ids</span></td><td>users</td><td>Maps Gong users to Salesforce users (critical for join path)</td></tr>
+        <tr><td>7</td><td><span class="mono">gong_conversation_contexts</span></td><td>users</td><td>Links conversations to CRM objects (opportunities, accounts). This is the bridge table.</td></tr>
+        <tr><td>8</td><td><span class="mono">gong_conversation_participants</span></td><td>users</td><td>All participants with affiliation (company vs external), speaker IDs</td></tr>
+        <tr><td>9</td><td><span class="mono">gong_interaction_stats</span></td><td>intelligence</td><td>Talk ratio, interactivity, patience, question rate per call</td></tr>
+        <tr><td>10</td><td><span class="mono">gong_trackers</span></td><td>intelligence</td><td>Keyword and smart tracker definitions (competitors, topics)</td></tr>
+        <tr><td>11</td><td><span class="mono">gong_conversation_trackers</span></td><td>intelligence</td><td>Tracker mentions per conversation with counts</td></tr>
+        <tr><td>12</td><td><span class="mono">gong_comments</span></td><td>intelligence</td><td>User comments on calls with threading, mentions, tags</td></tr>
+        <tr><td>13</td><td><span class="mono">gong_emails</span></td><td>additional</td><td>Email conversation metadata, auto-submit detection</td></tr>
+        <tr><td>14</td><td><span class="mono">gong_meetings</span></td><td>additional</td><td>Calendar meeting metadata, organizer, recurring flags</td></tr>
+        <tr><td>15</td><td><span class="mono">gong_workspaces</span></td><td>additional</td><td>Workspace definitions</td></tr>
+        <tr><td>16</td><td><span class="mono">gong_deal_likelihood_scores</span></td><td>additional</td><td>Gong's proprietary AI deal risk scoring (1 to 99)</td></tr>
+      </tbody>
+    </table>
+
+    <!-- FOS Backend Objects Table -->
+    <h3 style="font-size:15px;font-weight:700;color:#2E2E38;margin-bottom:12px;">FOS Backend (10 Hybrid Tables, direct SPCS agent writes)</h3>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Table</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><span class="mono">fos_agent_events</span></td><td rowspan="10" style="vertical-align:middle;">These 10 tables are Hybrid Tables written to by SPCS agents at runtime. They are not extracted from an external system. They live in Bronze because they are raw operational data that feeds into Silver and Gold Dynamic Tables (the write-back loop). No ETL connector is needed. Agents write directly via Snowpark SDK.</td></tr>
+        <tr><td>2</td><td><span class="mono">fos_next_best_actions</span></td></tr>
+        <tr><td>3</td><td><span class="mono">fos_playbooks</span></td></tr>
+        <tr><td>4</td><td><span class="mono">fos_health_history</span></td></tr>
+        <tr><td>5</td><td><span class="mono">fos_feedback_log</span></td></tr>
+        <tr><td>6</td><td><span class="mono">fos_content_chunks</span></td></tr>
+        <tr><td>7</td><td><span class="mono">fos_audit_log</span></td></tr>
+        <tr><td>8</td><td><span class="mono">fos_user_preferences</span></td></tr>
+        <tr><td>9</td><td><span class="mono">fos_notification_queue</span></td></tr>
+        <tr><td>10</td><td><span class="mono">fos_agent_runs</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>Bronze Design Rules:</strong> No transformations applied. No deduplication (that happens in Silver). No null handling (that happens in Silver). No computed fields (that happens in Silver). Column names match source system API names. Each table has metadata columns for sync tracking and soft delete flags. Tables are append-friendly for incremental loads.
+    </div>
+  </div>
+
+  <!-- SECTION 3: Latency Timeline -->
+  <div class="section" id="section-3">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <h2 class="section-title">Latency Timeline</h2>
+    </div>
+    <div class="purpose-block">
+      For Salesforce data, the worst-case latency chain from a field change by an AE to agent detection. Real-time triggers via Azure Event Hubs can reduce this for high-priority events, but the baseline polling path has this latency profile.
+    </div>
+
+    <div class="flow">
+      <div class="flow-box">
+        <strong>Source Change</strong>
+        <small>AE updates field in Salesforce</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box bronze">
+        <strong>Bronze</strong>
+        <small>0 to 15 min</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box silver">
+        <strong>Silver</strong>
+        <small>1 to 5 min</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box gold">
+        <strong>Gold</strong>
+        <small>1 to 5 min</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box semantic">
+        <strong>Semantic</strong>
+        <small>On query (zero latency)</small>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+      <div class="flow-box agent">
+        <strong>Agent Detection</strong>
+        <small>Up to 60 min</small>
+      </div>
+    </div>
+    <div class="flow-note"><strong>Total worst case: ~75 to 90 minutes</strong> from Salesforce change to agent detection.</div>
+
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-title">OpenFlow Sync</div>
+        <div class="card-desc">
+          OpenFlow syncs every 15 minutes using incremental CDC via SystemModstamp. Only records changed since the last sync are pulled via the Salesforce Bulk API.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dynamic Tables (Silver + Gold)</div>
+        <div class="card-desc">
+          Silver and Gold layers use Snowflake Dynamic Tables that auto-refresh on upstream change. Refresh takes minutes, cascading from Silver to Gold.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Semantic + Agent</div>
+        <div class="card-desc">
+          Semantic layer uses SQL Views (always current, no materialization, zero additional latency). Detection Agent scans every 60 minutes via Snowflake Task.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: MEDDPICC Validation -->
+  <div class="section" id="section-4">
+    <div class="section-header">
+      <span class="section-number">4</span>
+      <h2 class="section-title">MEDDPICC Validation</h2>
+    </div>
+
+    <div class="callout callout-risk">
+      <strong>Known Risk: MEDDPICC Custom Field Validation</strong><br><br>
+      The Opportunity object in Salesforce includes MEDDPICC custom fields (using the <span class="mono">__c</span> suffix convention). These fields are critical for the health scoring formula (15% weight in the AHP composite score). The 8 MEDDPICC components are: Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion, Competition, Paper Process. Each is scored 0 to 3.
+    </div>
+
+    <div class="purpose-block">
+      <strong>What needs validation:</strong>
+      <ul style="margin:8px 0 0 18px;">
+        <li>Confirm the exact API names of MEDDPICC custom fields in Canva's Salesforce org (e.g., <span class="mono">meddpicc_metrics__c</span> vs <span class="mono">MEDDPICC_Metrics__c</span> vs something else entirely)</li>
+        <li>Confirm the field data types (picklist with values 0 to 3? Number? Text?)</li>
+        <li>Confirm that these fields actually exist and are populated. If Canva uses a different field naming convention or a managed package for MEDDPICC, the Bronze DDL will need to be updated</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-risk">
+      <strong>Impact if wrong:</strong> Health scores will be incomplete. MEDDPICC gap detection will not work. Coaching nudges will be inaccurate.
+    </div>
+  </div>
+
+  <!-- SECTION 5: Refresh Schedules -->
+  <div class="section" id="section-5">
+    <div class="section-header">
+      <span class="section-number">5</span>
+      <h2 class="section-title">Refresh Schedules</h2>
+    </div>
+    <div class="purpose-block">
+      Each layer in the pipeline has its own refresh mechanism and frequency. The architecture is Snowflake-native with no dbt and no external orchestration for transformations.
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Source</th><th>Target</th><th>Connector</th><th>Frequency</th><th>Strategy</th><th>Latency</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Salesforce</td>
+          <td>FOS_PROD.BRONZE (9 tables)</td>
+          <td>OpenFlow (Bulk API)</td>
+          <td>Every 15 min</td>
+          <td>Incremental (CDC via SystemModstamp)</td>
+          <td>~15 min worst case</td>
+        </tr>
+        <tr>
+          <td>Gong</td>
+          <td>FOS_PROD.BRONZE (16 tables)</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+          <td>TBD</td>
+        </tr>
+        <tr>
+          <td>Guru / Content</td>
+          <td>Cortex Search index</td>
+          <td>TBD</td>
+          <td>On content update</td>
+          <td>Full re-index per document</td>
+          <td>TBD</td>
+        </tr>
+        <tr>
+          <td>FOS Backend</td>
+          <td>FOS_PROD.BRONZE (10 Hybrid Tables)</td>
+          <td>Direct write (Snowpark SDK)</td>
+          <td>Real-time (on agent execution)</td>
+          <td>Transactional (ACID)</td>
+          <td>Sub-second</td>
+        </tr>
+        <tr>
+          <td>Bronze to Silver</td>
+          <td>FOS_PROD.SILVER (35 Dynamic Tables)</td>
+          <td>Dynamic Tables</td>
+          <td>Auto-refresh on upstream change</td>
+          <td>Automatic (Snowflake-managed)</td>
+          <td>Minutes (depends on DT lag target)</td>
+        </tr>
+        <tr>
+          <td>Silver to Gold</td>
+          <td>FOS_PROD.GOLD (27 Dynamic Tables)</td>
+          <td>Dynamic Tables</td>
+          <td>Auto-refresh on upstream change</td>
+          <td>Automatic (Snowflake-managed)</td>
+          <td>Minutes (cascading from Silver)</td>
+        </tr>
+        <tr>
+          <td>Gold to Semantic</td>
+          <td>FOS_PROD.SEMANTIC (11 SQL Views)</td>
+          <td>SQL Views (not Dynamic Tables)</td>
+          <td>Always current on query</td>
+          <td>Live (no materialization)</td>
+          <td>Zero (computed at query time)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 6: Decisions -->
+  <div class="section" id="section-6">
+    <div class="section-header">
+      <span class="section-number">6</span>
+      <h2 class="section-title">Decisions</h2>
+    </div>
+    <div class="purpose-block">
+      Summary of what has been decided, what remains open, and what carries risk for the data extraction pipeline.
+    </div>
+
+    <!-- Decided -->
+    <div class="callout callout-decided">
+      <strong>Decided</strong>
+      <ul>
+        <li>Salesforce extraction uses OpenFlow with the Salesforce Bulk API connector</li>
+        <li>Salesforce sync runs every 15 minutes, incremental</li>
+        <li>9 Salesforce objects have been identified and DDL is defined</li>
+        <li>16 Gong objects have been identified and DDL is defined</li>
+        <li>Guru/content data goes to Cortex Search, not to Bronze</li>
+        <li>All structured data lands in FOS_PROD.BRONZE with no transformations</li>
+        <li>Bronze has 35 total tables (25 external + 10 Hybrid Tables)</li>
+        <li>FOS backend uses Hybrid Tables with direct SPCS agent writes</li>
+        <li>Dynamic Tables handle Bronze-to-Silver and Silver-to-Gold refresh automatically</li>
+        <li>Semantic layer uses SQL Views (always current, not materialized)</li>
+        <li>The architecture is Snowflake-native. No dbt. No external orchestration for transformations.</li>
+        <li>Canva currently uses Fivetran for some SFDC sync, but FOS uses its own OpenFlow pipeline independently</li>
+        <li>Table naming convention is lowercase (intentional, not Fivetran defaults)</li>
+      </ul>
+    </div>
+
+    <!-- Open -->
+    <div class="callout callout-open">
+      <strong>Open Questions</strong>
+      <ul>
+        <li>Which Gong connector to use (HTTP/API via OpenFlow, Fivetran, or Gong Data Cloud)?</li>
+        <li>What is the Gong sync frequency?</li>
+        <li>Do Gong transcripts also go to Cortex Search for RAG?</li>
+        <li>How do we extract content from Guru? (Guru REST API, bulk export, or batch loader)</li>
+        <li>What is the chunking and embedding strategy for Cortex Search?</li>
+        <li>What is the exact inventory of content in Guru?</li>
+        <li>What are the exact API names of MEDDPICC custom fields in Canva's SFDC org?</li>
+        <li>Does OpenFlow support the specific Salesforce custom fields Canva uses?</li>
+        <li>What is the Gong API rate limit?</li>
+        <li>Does Canva have a Gong Data Cloud license?</li>
+        <li>How do we handle Guru content updates and re-indexing?</li>
+      </ul>
+    </div>
+
+    <!-- Risk -->
+    <div class="callout callout-risk">
+      <strong>Risks</strong>
+      <ul>
+        <li><strong>Gong connector blocks 16 Bronze tables.</strong> No Gong connector means no call analytics, no competitor detection, no SE handoff signals, and no meeting prep. This is the single largest blocker in the extraction pipeline.</li>
+        <li><strong>Wrong MEDDPICC field names cause silent failures.</strong> If the custom field API names do not match what the Bronze DDL expects, MEDDPICC scoring (15% of the health score) breaks silently. Health scores will be incomplete, gap detection will not work, and coaching nudges will be inaccurate.</li>
+        <li><strong>Guru extraction is fully undefined.</strong> Almost everything about this path is undefined: extraction method, chunking strategy, embedding model, update handling, content inventory, metadata preservation, and access controls. Without Guru content, RAG returns nothing for battle cards and win/loss reports.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">This is one of seven architecture deep dives for the Future of Sales project.</div>
+  <div class="footer-links">
+    <a class="footer-link current" href="#">01 Data Extraction</a>
+    <a class="footer-link" href="../02-medallion/deep-dive.html">02 Medallion</a>
+    <a class="footer-link" href="../03-semantic-layer/deep-dive.html">03 Semantic Layer</a>
+    <a class="footer-link" href="../04-rag-pipeline/deep-dive.html">04 RAG Pipeline</a>
+    <a class="footer-link" href="../05-application-layer/deep-dive.html">05 Application</a>
+    <a class="footer-link" href="../06-agent-runtime/deep-dive.html">06 Agent Runtime</a>
+    <a class="footer-link" href="../07-data-flows/deep-dive.html">07 Data Flows</a>
+  </div>
+</div>
+
+<!-- SCROLL SPY -->
+<script>
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.side-nav a');
+window.addEventListener('scroll', function() {
+  let current = '';
+  sections.forEach(function(section) {
+    const sectionTop = section.offsetTop - 100;
+    if (window.scrollY >= sectionTop) current = section.getAttribute('id');
+  });
+  navLinks.forEach(function(link) {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

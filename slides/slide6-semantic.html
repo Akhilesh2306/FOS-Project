@@ -1,0 +1,177 @@
+<div class="slide slide-light slide-scroll" id="slide-6">
+  <div class="slide-inner">
+    <div class="slide-badge-outline">Semantic Layer</div>
+    <div class="slide-title">11 views that <span class="highlight-text">agents actually query.</span></div>
+    <div class="slide-subtitle">
+      Built on top of Gold. Business-friendly names. Flat structures. Optimized for LLM context windows.
+    </div>
+
+    <!-- Hero: v_opportunity_llm_context -->
+    <div class="semantic-hero">
+      <div class="semantic-hero-label">The Key View</div>
+      <div class="semantic-hero-name">v_opportunity_llm_context</div>
+      <div class="semantic-hero-desc">
+        Returns the complete context for any deal in a single query, under 500ms. Everything an agent needs: opportunity details, account info, owner, full MEDDPICC breakdown, stakeholder map, recent activities, Gong call summaries, competitor mentions, health score, risk flags, and data quality confidence.
+      </div>
+      <div class="semantic-hero-cols">
+        <div class="semantic-col-group">
+          <div class="semantic-col-group-name">Deal</div>
+          <div class="semantic-col-item">opportunity_id</div>
+          <div class="semantic-col-item">opportunity_name</div>
+          <div class="semantic-col-item">stage_name</div>
+          <div class="semantic-col-item">amount</div>
+          <div class="semantic-col-item">close_date</div>
+          <div class="semantic-col-item">days_until_close</div>
+          <div class="semantic-col-item">is_overdue</div>
+          <div class="semantic-col-item">deal_size_category</div>
+        </div>
+        <div class="semantic-col-group">
+          <div class="semantic-col-group-name">Health and Risk</div>
+          <div class="semantic-col-item">health_score (0-100)</div>
+          <div class="semantic-col-item">risk_level</div>
+          <div class="semantic-col-item">risk_flags</div>
+          <div class="semantic-col-item">velocity_status</div>
+          <div class="semantic-col-item">data_quality_score</div>
+          <div class="semantic-col-item">agent_confidence</div>
+        </div>
+        <div class="semantic-col-group">
+          <div class="semantic-col-group-name">MEDDPICC</div>
+          <div class="semantic-col-item">meddpicc_total_score (0-24)</div>
+          <div class="semantic-col-item">meddpicc_completion_pct</div>
+          <div class="semantic-col-item">meddpicc_health_rating</div>
+          <div class="semantic-col-item">meddpicc_gaps</div>
+        </div>
+        <div class="semantic-col-group">
+          <div class="semantic-col-group-name">Engagement</div>
+          <div class="semantic-col-item">stakeholder_count</div>
+          <div class="semantic-col-item">stakeholder_summary</div>
+          <div class="semantic-col-item">active_contacts_30d</div>
+          <div class="semantic-col-item">threading_score</div>
+          <div class="semantic-col-item">activity_count_30d</div>
+          <div class="semantic-col-item">days_since_last_activity</div>
+          <div class="semantic-col-item">activity_status</div>
+          <div class="semantic-col-item">recent_activities</div>
+        </div>
+        <div class="semantic-col-group">
+          <div class="semantic-col-group-name">Gong</div>
+          <div class="semantic-col-item">total_gong_calls</div>
+          <div class="semantic-col-item">last_call_date</div>
+          <div class="semantic-col-item">avg_talk_ratio</div>
+          <div class="semantic-col-item">recent_call_summaries</div>
+          <div class="semantic-col-item">competitors_mentioned</div>
+          <div class="semantic-col-item">competitor_mention_count</div>
+        </div>
+        <div class="semantic-col-group">
+          <div class="semantic-col-group-name">Context</div>
+          <div class="semantic-col-item">account_name</div>
+          <div class="semantic-col-item">account_industry</div>
+          <div class="semantic-col-item">account_revenue</div>
+          <div class="semantic-col-item">owner_name</div>
+          <div class="semantic-col-item">owner_email</div>
+          <div class="semantic-col-item">days_in_current_stage</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other 10 views -->
+    <div class="semantic-grid">
+      <div class="semantic-card">
+        <div class="semantic-name">v_opportunity_health_current</div>
+        <div class="semantic-purpose">Composite health score with 5 component breakdowns and 7d/30d trends</div>
+        <div>
+          <span class="semantic-agent-tag">Detection</span>
+          <span class="semantic-agent-tag">NBA</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_opportunity_meddicc_breakdown</div>
+        <div class="semantic-purpose">All 8 MEDDPICC components with scores, status, and gap identification</div>
+        <div>
+          <span class="semantic-agent-tag">NBA</span>
+          <span class="semantic-agent-tag">Playbook</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_opportunity_stage_velocity</div>
+        <div class="semantic-purpose">Days in stage vs. benchmarks, velocity status, pushout tracking</div>
+        <div>
+          <span class="semantic-agent-tag">Detection</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_deal_risk_indicators</div>
+        <div class="semantic-purpose">Weighted risk score from staleness, close date urgency, and deal size factors</div>
+        <div>
+          <span class="semantic-agent-tag">Detection</span>
+          <span class="semantic-agent-tag">NBA</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_next_contact_recommendation</div>
+        <div class="semantic-purpose">Contacts ranked by outreach priority based on role, recency, and MEDDPICC gaps</div>
+        <div>
+          <span class="semantic-agent-tag">NBA</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_meddicc_quality_dashboard</div>
+        <div class="semantic-purpose">MEDDPICC fill rates per component, coaching priority by stage and deal size</div>
+        <div>
+          <span class="semantic-agent-tag">NBA</span>
+          <span class="semantic-agent-tag">Dashboard</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_data_completeness_score</div>
+        <div class="semantic-purpose">Data quality score (0-100) and agent confidence level (High/Medium/Low)</div>
+        <div>
+          <span class="semantic-agent-tag">All Agents</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_agent_trigger_queue</div>
+        <div class="semantic-purpose">Pending events with priority scoring, eligibility check, and deduplication</div>
+        <div>
+          <span class="semantic-agent-tag">Detection</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_agent_recommendation_history</div>
+        <div class="semantic-purpose">Past recommendations with cooldown flags to prevent recommendation fatigue</div>
+        <div>
+          <span class="semantic-agent-tag">NBA</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+
+      <div class="semantic-card">
+        <div class="semantic-name">v_rag_content_catalog</div>
+        <div class="semantic-purpose">Content metadata filtering (type, industry, competitor, stage) before vector search</div>
+        <div>
+          <span class="semantic-agent-tag">RAG</span>
+        </div>
+        <div class="semantic-perf">&lt; 200ms</div>
+      </div>
+    </div>
+
+    <div class="semantic-rule">
+      <strong>Architecture rule:</strong> AI agents query Semantic views only. They never access Gold, Silver, or Bronze directly. This creates a clean contract between the data team (who owns Gold) and the AI team (who builds agents). If Gold logic changes, Semantic absorbs the change without requiring agent code updates.
+    </div>
+  </div>
+</div>

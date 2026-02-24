@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Layer - FOS Architecture Deep Dive</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#F6F6FA;color:#2E2E38;line-height:1.6}
+
+/* Side Navigation */
+.side-nav{position:fixed;left:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:100}
+.side-nav a{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;color:#747480;transition:all 0.2s;border-left:3px solid transparent}
+.side-nav a:hover{background:#EDEDF0;color:#2E2E38}
+.side-nav a.active{background:#FFF9E0;color:#2E2E38;border-left-color:#FFE600;font-weight:600}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#C8C8D0;flex-shrink:0}
+.side-nav a.active .nav-dot{background:#FFE600}
+.side-nav a:hover .nav-dot{background:#747480}
+
+/* Header */
+.header{text-align:center;padding:64px 24px 40px}
+.part-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#747480;margin-bottom:12px}
+.page-title{font-size:36px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.page-subtitle{font-size:16px;color:#747480;max-width:720px;margin:0 auto;line-height:1.6}
+
+/* Page Container */
+.page{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+/* Section */
+.section{margin-bottom:56px;scroll-margin-top:40px}
+.section-header{margin-bottom:24px;display:flex;align-items:center;gap:12px}
+.section-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FFE600;color:#2E2E38;font-size:14px;font-weight:700;flex-shrink:0}
+.section-title{font-size:22px;font-weight:700;color:#2E2E38}
+.section-subtitle{font-size:14px;color:#747480;margin-top:4px}
+
+/* Purpose/Intro Block */
+.purpose-block{border-left:4px solid #FFE600;padding:16px 20px;background:#FFFDE6;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.7}
+
+/* Cards */
+.card-grid{display:grid;gap:16px;margin-bottom:24px}
+.card-grid-2{grid-template-columns:repeat(2,1fr)}
+.card-grid-3{grid-template-columns:repeat(3,1fr)}
+.card-grid-4{grid-template-columns:repeat(4,1fr)}
+.card{background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:20px;transition:box-shadow 0.2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.card-title{font-size:14px;font-weight:700;color:#2E2E38;margin-bottom:8px}
+.card-desc{font-size:12px;color:#747480;line-height:1.7}
+.card-desc strong{color:#2E2E38}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;background:#FFF;border-radius:8px;overflow:hidden;border:1px solid #E0E0E4}
+thead{background:#F0F0F4}
+th{padding:12px 16px;text-align:left;font-weight:600;color:#2E2E38;border-bottom:2px solid #E0E0E4}
+td{padding:10px 16px;border-bottom:1px solid #F0F0F4;color:#2E2E38;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover{background:#FAFAFA}
+
+/* Flow Diagram */
+.flow{display:flex;align-items:center;gap:0;padding:20px 0;overflow-x:auto;margin-bottom:16px;flex-wrap:wrap;justify-content:center}
+.flow-box{padding:12px 16px;border-radius:8px;font-size:12px;text-align:center;min-width:100px;border:2px solid #E0E0E4;background:#FFF;line-height:1.5}
+.flow-box strong{display:block;font-size:13px;color:#2E2E38}
+.flow-box small{color:#747480}
+.flow-arrow{font-size:18px;color:#747480;padding:0 8px;flex-shrink:0}
+.flow-box.bronze{border-color:#FFE600;background:#FFFDE6}
+.flow-box.silver{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.gold{border-color:#FF9800;background:#FFF3E0}
+.flow-box.semantic{border-color:#6A1B9A;background:#F3E5F5}
+.flow-box.snowflake{border-color:#29B5E8;background:#E6F7FE}
+.flow-box.azure{border-color:#0078D4;background:#E6F0FA}
+.flow-box.agent{border-color:#FF6B00;background:#FFF3E0}
+.flow-note{font-size:13px;color:#747480;margin-bottom:16px;text-align:center}
+.flow-note strong{color:#2E2E38}
+
+/* Callout Boxes */
+.callout{border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;line-height:1.7}
+.callout ul{margin:8px 0 0 18px}
+.callout li{margin-bottom:4px}
+.callout-decided{background:#E6F9E6;border-left:4px solid #2E7D32}
+.callout-open{background:#FFF8E1;border-left:4px solid #F9A825}
+.callout-risk{background:#FDE8E8;border-left:4px solid #C62828}
+.callout-info{background:#E3F2FD;border-left:4px solid #1565C0}
+
+/* Tags */
+.tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;padding:2px 8px;border-radius:4px;margin:0 4px 4px 0;vertical-align:middle}
+.tag-decided{background:#E6F9E6;color:#2E7D32}
+.tag-tbd{background:#FFF8E1;color:#F9A825}
+.tag-risk{background:#FDE8E8;color:#C62828}
+.tag-info{background:#E3F2FD;color:#1565C0}
+
+/* Stat Row */
+.stat-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.stat{text-align:center;flex:1;min-width:80px;background:#FFF;border:1px solid #E0E0E4;border-radius:10px;padding:16px 12px}
+.stat-number{font-size:28px;font-weight:700;color:#2E2E38}
+.stat-label{font-size:11px;color:#747480;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* Mono text */
+.mono{font-family:'Consolas','Monaco',monospace;font-size:12px;background:#F0F0F4;padding:1px 6px;border-radius:3px}
+
+/* Column Groups (for semantic layer) */
+.col-group{background:#FFF;border:1px solid #E0E0E4;border-radius:8px;padding:14px}
+.col-group-name{font-size:13px;font-weight:700;color:#2E2E38;margin-bottom:6px}
+.col-group-item{font-size:11px;color:#747480;line-height:1.8;font-family:'Consolas',monospace}
+
+/* Hero View (for semantic layer) */
+.hero-view{background:#FFF;border:2px solid #6A1B9A;border-radius:12px;padding:24px;margin-bottom:24px}
+.hero-view-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6A1B9A;margin-bottom:4px}
+.hero-view-name{font-size:24px;font-weight:700;color:#2E2E38;margin-bottom:8px;font-family:'Consolas',monospace}
+.hero-view-desc{font-size:14px;color:#747480;margin-bottom:16px}
+
+/* Footer */
+.footer{text-align:center;padding:48px 24px;border-top:1px solid #E0E0E4;margin-top:48px}
+.footer-text{font-size:13px;color:#747480;margin-bottom:16px}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.footer-link{font-size:13px;color:#2E2E38;text-decoration:none;padding:8px 16px;border-radius:8px;background:#FFF;border:1px solid #E0E0E4;transition:all 0.2s}
+.footer-link:hover{background:#FFF9E0;border-color:#FFE600}
+.footer-link.current{background:#FFE600;font-weight:600;pointer-events:none}
+
+/* Step list inside cards */
+.step-list{font-size:12px;color:#747480;line-height:1.8;margin-top:8px;padding-left:0;list-style:none;counter-reset:step-counter}
+.step-list li{counter-increment:step-counter;padding-left:22px;position:relative;margin-bottom:4px}
+.step-list li::before{content:counter(step-counter);position:absolute;left:0;top:0;width:16px;height:16px;border-radius:50%;background:#F0F0F4;color:#747480;font-size:10px;font-weight:700;text-align:center;line-height:16px}
+
+/* Responsive */
+@media(max-width:1400px){.side-nav{display:none}}
+@media(max-width:1024px){
+  .card-grid-3,.card-grid-4{grid-template-columns:repeat(2,1fr)}
+  .page-title{font-size:28px}
+  .header{padding:48px 24px 32px}
+}
+@media(max-width:640px){
+  .card-grid-2,.card-grid-3,.card-grid-4{grid-template-columns:1fr}
+  .stat-row{gap:8px}
+  .flow{flex-direction:column;align-items:stretch}
+  .flow-box{min-width:auto}
+  .flow-arrow{transform:rotate(90deg);text-align:center;padding:4px 0}
+  .page-title{font-size:22px}
+  .page-subtitle{font-size:14px}
+  .section-title{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDE NAVIGATION -->
+<nav class="side-nav">
+  <a href="#section-1" class="active"><span class="nav-dot"></span> Component Topology</a>
+  <a href="#section-2"><span class="nav-dot"></span> API Endpoints</a>
+  <a href="#section-3"><span class="nav-dot"></span> Event Hubs Topology</a>
+  <a href="#section-4"><span class="nav-dot"></span> Request Flows</a>
+  <a href="#section-5"><span class="nav-dot"></span> Authentication</a>
+  <a href="#section-6"><span class="nav-dot"></span> SF-to-Event-Hubs Bridge</a>
+  <a href="#section-7"><span class="nav-dot"></span> Open Questions</a>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="part-label">Architecture Deep Dive 05</div>
+  <h1 class="page-title">Application Layer</h1>
+  <p class="page-subtitle">Frontend, backend, API, pub/sub, and auth. How users reach the agents.</p>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="page">
+
+  <!-- SECTION 1: Component Topology -->
+  <div class="section" id="section-1">
+    <div class="section-header">
+      <span class="section-number">1</span>
+      <h2 class="section-title">Component Topology</h2>
+    </div>
+    <div class="purpose-block">
+      The application layer is the connective tissue between the people who use FOS (Account Executives, Sales Engineers, Managers) and the AI agents that run inside Snowpark Container Services. Two delivery channels (Slack and a Web Dashboard) talk to a single FastAPI backend. Asynchronous communication is handled by Azure Event Hubs.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Where It Runs</th>
+          <th>Why There</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Web Dashboard</strong></td>
+          <td>Azure (Static Web Apps or Container Apps)</td>
+          <td>Needs public URL for browser access</td>
+        </tr>
+        <tr>
+          <td><strong>Slack Bot</strong></td>
+          <td>Azure Container Apps</td>
+          <td>Needs public URL for Slack webhook delivery</td>
+        </tr>
+        <tr>
+          <td><strong>FastAPI + Agents</strong></td>
+          <td>SPCS (Snowflake)</td>
+          <td>Co-located with data, Cortex LLM, Hybrid Tables</td>
+        </tr>
+        <tr>
+          <td><strong>Event Hubs</strong></td>
+          <td>Azure</td>
+          <td>Snowflake has no native real-time pub/sub service</td>
+        </tr>
+        <tr>
+          <td><strong>Streamlit</strong></td>
+          <td>Snowflake (Streamlit in Snowflake)</td>
+          <td>Quick dev-only access, test harness only</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-decided">
+      <strong>Decided:</strong> All AI inference stays inside Snowflake. When FastAPI routes a request to an agent, the agent queries the Semantic layer and calls Cortex LLM. Everything happens inside the Snowflake security perimeter with no data leaving Snowflake for AI inference.
+    </div>
+  </div>
+
+  <!-- SECTION 2: API Endpoints -->
+  <div class="section" id="section-2">
+    <div class="section-header">
+      <span class="section-number">2</span>
+      <h2 class="section-title">API Endpoints</h2>
+    </div>
+    <div class="purpose-block">
+      FastAPI is the single API server for all external consumers. It receives requests from the Slack Bot, Web Dashboard, and Streamlit test harness. It routes each request to the appropriate LangGraph agent, waits for completion, and returns the response.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Path</th>
+          <th>Consumer</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="mono">GET</span></td>
+          <td><span class="mono">/health</span></td>
+          <td>All</td>
+          <td>Liveness and readiness check. Returns 200 if FastAPI is running and Snowflake connection is alive.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">GET</span></td>
+          <td><span class="mono">/deal/{id}/nba</span></td>
+          <td>Dashboard, Slack Bot</td>
+          <td>Returns ranked next best actions. Serves cached results if recent; otherwise triggers NBA Agent synchronously.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">GET</span></td>
+          <td><span class="mono">/deal/{id}/playbook</span></td>
+          <td>Dashboard, Slack Bot</td>
+          <td>Returns deal-specific playbook (11 sections). Serves cached results or triggers Playbook Agent.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">GET</span></td>
+          <td><span class="mono">/deal/{id}/prep</span></td>
+          <td>Dashboard, Slack Bot</td>
+          <td>Returns meeting prep brief. Combines deal context, Gong call summary, and open questions.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">GET</span></td>
+          <td><span class="mono">/deal/{id}/health</span></td>
+          <td>Dashboard, Slack Bot</td>
+          <td>Returns current health score breakdown and trend data. Pure read from the Semantic layer.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">GET</span></td>
+          <td><span class="mono">/pipeline/overview</span></td>
+          <td>Dashboard</td>
+          <td>Returns all open deals with health scores, risk levels, and summary metrics. Supports query params for filtering.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">POST</span></td>
+          <td><span class="mono">/feedback</span></td>
+          <td>Dashboard, Slack Bot</td>
+          <td>Records user feedback (thumbs up/down, rating, comment) on an NBA or playbook.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">GET</span></td>
+          <td><span class="mono">/agent/status</span></td>
+          <td>Dashboard (admin), Streamlit</td>
+          <td>Returns health and run history of each agent. Last run time, success/failure counts, average latency.</td>
+        </tr>
+        <tr>
+          <td><span class="mono">GET</span></td>
+          <td><span class="mono">/user/preferences</span></td>
+          <td>Dashboard, Slack Bot</td>
+          <td>Returns the current user's notification preferences from the Hybrid Table.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">Pure Reads (health, pipeline, stakeholders)</div>
+        <div class="card-desc">
+          <strong>Latency: 50 to 150 ms</strong><br>
+          Reads directly from the Semantic layer or Hybrid Tables. No agent invocation. Timeout set to 5 seconds. This covers endpoints like <span class="mono">/deal/{id}/health</span>, <span class="mono">/pipeline/overview</span>, and cached NBA/playbook results.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Fresh Agent Call (nba/generate, playbook)</div>
+        <div class="card-desc">
+          <strong>Latency: 2 to 15 seconds</strong><br>
+          Triggers a full LangGraph state machine execution including Cortex LLM inference. NBA generation takes 2 to 5 seconds. Playbook generation takes 5 to 15 seconds. Timeout set to 30 to 60 seconds respectively.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Event Hubs Topology -->
+  <div class="section" id="section-3">
+    <div class="section-header">
+      <span class="section-number">3</span>
+      <h2 class="section-title">Event Hubs Topology</h2>
+    </div>
+    <div class="purpose-block">
+      Azure Event Hubs provides real-time pub/sub between agents and between agents and delivery channels. When the Detection Agent finds events that need processing, it publishes them to Event Hubs. NBA and Playbook Agents consume from the same topic. Notifications flow back through a dedicated topic to the Slack Bot.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Topic Name</th>
+          <th>Partitions</th>
+          <th>Publisher</th>
+          <th>Consumer(s)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="mono">fos-agent-events</span></td>
+          <td>4</td>
+          <td>Detection Agent (SPCS)</td>
+          <td>NBA Agent (SPCS), Playbook Agent (SPCS)</td>
+        </tr>
+        <tr>
+          <td><span class="mono">fos-nba-results</span></td>
+          <td>2</td>
+          <td>NBA Agent (SPCS)</td>
+          <td>Notification router</td>
+        </tr>
+        <tr>
+          <td><span class="mono">fos-playbook-results</span></td>
+          <td>2</td>
+          <td>Playbook Agent (SPCS)</td>
+          <td>Notification router</td>
+        </tr>
+        <tr>
+          <td><span class="mono">fos-notifications</span></td>
+          <td>4</td>
+          <td>Notification router (SPCS)</td>
+          <td>Slack Bot (Azure), Web Dashboard (via SSE or polling)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-decided">
+      <strong>Decided:</strong> Partition key is <span class="mono">hash(opportunity_id)</span>. All events for the same deal go to the same partition, enabling ordered processing per deal with no race conditions. The <span class="mono">fos-notifications</span> topic partitions by <span class="mono">hash(target_user_id)</span> to preserve per-user delivery order.
+    </div>
+
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-title">Retention</div>
+        <div class="card-desc">
+          <strong>24 hours.</strong> Events older than 24 hours are stale. If an agent was down for a day, replaying old events would generate outdated recommendations. Short retention keeps the system forward-looking.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dead Letter</div>
+        <div class="card-desc">
+          <strong>3 attempts, then DLQ.</strong> Messages that fail processing 3 times are moved to a dead letter topic (<span class="mono">fos-dlq</span>) for manual inspection. Prevents poison messages from blocking the queue.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Checkpointing</div>
+        <div class="card-desc">
+          <strong>Per consumer group, per partition.</strong> Consumers checkpoint after successful processing so they do not reprocess messages on restart. Each consumer group tracks its own offset independently.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Request Flows -->
+  <div class="section" id="section-4">
+    <div class="section-header">
+      <span class="section-number">4</span>
+      <h2 class="section-title">Request Flows</h2>
+    </div>
+    <div class="purpose-block">
+      Three detailed flows showing every hop in the system: a Slack command, a dashboard page load, and a proactive notification. Each flow traces from the user action (or system trigger) through every component to the final response.
+    </div>
+
+    <div class="card-grid card-grid-3">
+      <div class="card">
+        <div class="card-title">Flow A: Slack Command <span class="tag tag-info">1-8 sec</span></div>
+        <div class="card-desc">
+          User types a slash command like <span class="mono">/nba Acme Corp</span> in Slack.
+          <ol class="step-list">
+            <li>AE types slash command in Slack</li>
+            <li>Slack POSTs webhook to Slack Bot on Azure</li>
+            <li>Bot validates HMAC-SHA256 signature</li>
+            <li>Bot returns immediate ack ("Looking up...")</li>
+            <li>Bot resolves deal name to opportunity_id via SPCS</li>
+            <li>Bot calls <span class="mono">GET /deal/{id}/nba</span> on SPCS</li>
+            <li>FastAPI returns cached results (50 ms) or invokes NBA Agent (2-5 sec)</li>
+            <li>Bot formats Block Kit message and posts DM</li>
+          </ol>
+          <br><strong>Cache hit: 1-2 sec.</strong> Cache miss: 4-8 sec (dominated by LLM call).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Flow B: Dashboard Load <span class="tag tag-decided">120-150 ms</span></div>
+        <div class="card-desc">
+          Manager clicks a deal in the pipeline view to open the deal detail page.
+          <ol class="step-list">
+            <li>Manager clicks deal name in browser</li>
+            <li>Dashboard fires 5 parallel API requests to SPCS</li>
+            <li>SPCS ingress terminates TLS, forwards to FastAPI</li>
+            <li>FastAPI validates JWT, extracts user identity</li>
+            <li><span class="mono">/health</span> returns in 80 ms</li>
+            <li><span class="mono">/nba</span> returns cached results in 50 ms</li>
+            <li><span class="mono">/playbook</span> returns in 60 ms</li>
+            <li>Dashboard renders progressively as responses arrive</li>
+          </ol>
+          <br><strong>Page interactive after slowest response: 120-150 ms.</strong> Refresh NBAs adds 2-5 sec for fresh LLM call.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Flow C: Proactive Alert <span class="tag tag-risk">5-7 sec after detection</span></div>
+        <div class="card-desc">
+          System detects a stale deal and proactively notifies the AE.
+          <ol class="step-list">
+            <li>Snowflake Task fires Detection Agent (every 60 min)</li>
+            <li>Agent scans semantic views, finds stale deal</li>
+            <li>Agent writes event to Hybrid Table</li>
+            <li>Snowflake Stream detects new row</li>
+            <li>Task publishes event to Event Hubs via Azure Function</li>
+            <li>NBA Agent consumes event, runs LangGraph (2-5 sec)</li>
+            <li>Agent publishes notification to <span class="mono">fos-notifications</span></li>
+            <li>Slack Bot consumes, formats Block Kit, sends DM</li>
+          </ol>
+          <br><strong>Detection to DM: 5-7 sec processing</strong> after the 60-minute polling interval.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Authentication -->
+  <div class="section" id="section-5">
+    <div class="section-header">
+      <span class="section-number">5</span>
+      <h2 class="section-title">Authentication</h2>
+    </div>
+    <div class="purpose-block">
+      Authentication has the most open questions in this layer. MVP uses open visibility (any user can query any deal), but callers still need to be authenticated so the system knows who is making the request. Two integration paths need auth patterns: Slack Bot to SPCS and Dashboard to SPCS.
+    </div>
+
+    <div class="card-grid card-grid-2">
+      <div class="card">
+        <div class="card-title">Slack Bot to SPCS <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          The Slack Bot on Azure needs to prove its identity when calling SPCS FastAPI. Three options under evaluation:
+          <br><br>
+          <strong>Option 1: Snowflake OAuth (service-to-service)</strong><br>
+          Bot obtains OAuth token from Snowflake using client credentials grant. Snowflake-native. Token rotation is automatic. Requires OAuth integration setup.
+          <br><br>
+          <strong>Option 2: API Key (shared secret)</strong><br>
+          Long-lived key stored in the Bot's environment. Simple to implement but key rotation is manual. If leaked, full access until rotated.
+          <br><br>
+          <strong>Option 3: Key Pair RSA</strong><br>
+          RSA key pair authenticates as a Snowflake service user. JWT generated from the key pair. Strong authentication but more complex setup with Azure Key Vault.
+          <br><br>
+          <strong>Leaning toward:</strong> Snowflake OAuth (most Snowflake-native option).
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dashboard to SPCS <span class="tag tag-tbd">TBD</span></div>
+        <div class="card-desc">
+          Users access the Web Dashboard through a browser. The dashboard authenticates the user and passes their identity to SPCS. Three options under evaluation:
+          <br><br>
+          <strong>Option 1: SSO via Canva IdP + JWT</strong><br>
+          Dashboard authenticates against Canva's existing identity provider (Okta or Azure AD). IdP token exchanged for a short-lived JWT. Users log in with corporate credentials.
+          <br><br>
+          <strong>Option 2: Snowflake OAuth</strong><br>
+          User logs into Snowflake via browser redirect. Snowflake-native but requires every user to have a Snowflake login, which may not be desirable for AEs.
+          <br><br>
+          <strong>Option 3: Custom Auth</strong><br>
+          A lightweight auth service validates the user via IdP and issues a JWT with user metadata (role, team, Salesforce user ID). Flexible but adds another service to build.
+          <br><br>
+          <strong>Leaning toward:</strong> SSO via Canva IdP with JWT token exchange.
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-open">
+      <strong>MVP Simplification:</strong> The system uses open visibility for MVP. No row-level security on deals. Any authenticated user can see any deal. This matches Canva's current Salesforce configuration. Auth only needs to (1) verify the caller is a legitimate FOS user, and (2) identify which user it is for feedback, preferences, and audit. Full RBAC (restricting AEs to their own deals, managers to their team) is a post-MVP enhancement.
+    </div>
+  </div>
+
+  <!-- SECTION 6: SF-to-Event-Hubs Bridge -->
+  <div class="section" id="section-6">
+    <div class="section-header">
+      <span class="section-number">6</span>
+      <h2 class="section-title">SF-to-Event-Hubs Bridge</h2>
+    </div>
+    <div class="purpose-block">
+      The Detection Agent runs as a Snowflake Task. After it writes events to a Hybrid Table, a chain of six components gets those events into Azure Event Hubs for real-time consumption by downstream agents. This is the most complex integration path in the application layer.
+    </div>
+
+    <div class="flow">
+      <div class="flow-box snowflake">
+        <strong>Hybrid Table</strong>
+        <small>fos_agent_events</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box snowflake">
+        <strong>SF Stream</strong>
+        <small>Detects new rows</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box snowflake">
+        <strong>SF Task</strong>
+        <small>STREAM_HAS_DATA</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box">
+        <strong>External Func</strong>
+        <small>publish_event_hubs</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box azure">
+        <strong>Azure Function</strong>
+        <small>HTTP relay</small>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-box azure">
+        <strong>Event Hubs</strong>
+        <small>fos-agent-events</small>
+      </div>
+    </div>
+    <div class="flow-note">
+      <strong>Six hops:</strong> Hybrid Table &#8594; SF Stream &#8594; SF Task &#8594; External Function &#8594; Azure Function &#8594; Event Hubs
+    </div>
+
+    <div class="callout callout-risk">
+      <strong>Risk:</strong> This is the most fragile chain in the application layer. Six hops from Hybrid Table write to Event Hubs delivery. Each hop is a potential failure point. The SF Stream-to-Task trigger depends on <span class="mono">SYSTEM$STREAM_HAS_DATA</span> polling. The External Function-to-Azure Function call crosses the Snowflake-Azure boundary over HTTPS. This chain needs dedicated monitoring, alerting on each hop, and a clear escalation runbook.
+    </div>
+  </div>
+
+  <!-- SECTION 7: Open Questions -->
+  <div class="section" id="section-7">
+    <div class="section-header">
+      <span class="section-number">7</span>
+      <h2 class="section-title">Open Questions</h2>
+    </div>
+    <div class="purpose-block">
+      Unresolved decisions that need research or stakeholder input before the application layer can be fully implemented. Each item includes the impact of leaving it unresolved.
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Open Question</th>
+          <th>Status</th>
+          <th>Impact if Unresolved</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Dashboard framework</strong><br>React/Next.js vs. other SPA framework</td>
+          <td><span class="tag tag-tbd">TBD</span></td>
+          <td>Blocks frontend development start. Team needs to commit before writing UI code.</td>
+        </tr>
+        <tr>
+          <td><strong>SPCS ingress limits</strong><br>Rate limits, custom domains, throughput ceiling</td>
+          <td><span class="tag tag-tbd">Unknown</span></td>
+          <td>If rate limits are too low, high-traffic periods (Monday morning pipeline reviews) could throttle requests. Need to confirm with Snowflake.</td>
+        </tr>
+        <tr>
+          <td><strong>SPCS cold-start</strong><br>Latency when container scales to zero</td>
+          <td><span class="tag tag-tbd">Unmeasured</span></td>
+          <td>If containers scale to zero, first request after idle could take 10 to 30 seconds. May need a minimum replica count to avoid this.</td>
+        </tr>
+        <tr>
+          <td><strong>Auth patterns</strong><br>Slack Bot to SPCS and Dashboard to SPCS</td>
+          <td><span class="tag tag-tbd">Undecided</span></td>
+          <td>Blocks Slack Bot integration and dashboard development. Must decide before either can call SPCS endpoints.</td>
+        </tr>
+        <tr>
+          <td><strong>Notification batching</strong><br>Multiple events for the same deal within a short window</td>
+          <td><span class="tag tag-tbd">Not designed</span></td>
+          <td>Without batching, a deal with 3 triggers could generate 3 separate Slack DMs. Affects notification fatigue and user experience.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-text">This is one of seven architecture deep dives for the Future of Sales project.</div>
+  <div class="footer-links">
+    <a class="footer-link" href="../01-data-extraction/deep-dive.html">01 Data Extraction</a>
+    <a class="footer-link" href="../02-medallion/deep-dive.html">02 Medallion</a>
+    <a class="footer-link" href="../03-semantic-layer/deep-dive.html">03 Semantic Layer</a>
+    <a class="footer-link" href="../04-rag-pipeline/deep-dive.html">04 RAG Pipeline</a>
+    <a class="footer-link current" href="#">05 Application</a>
+    <a class="footer-link" href="../06-agent-runtime/deep-dive.html">06 Agent Runtime</a>
+    <a class="footer-link" href="../07-data-flows/deep-dive.html">07 Data Flows</a>
+  </div>
+</div>
+
+<!-- SCROLL SPY -->
+<script>
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.side-nav a');
+window.addEventListener('scroll', function() {
+  let current = '';
+  sections.forEach(function(section) {
+    const sectionTop = section.offsetTop - 100;
+    if (window.scrollY >= sectionTop) current = section.getAttribute('id');
+  });
+  navLinks.forEach(function(link) {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
