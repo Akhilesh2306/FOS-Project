@@ -1,0 +1,17 @@
+[project]
+name = "fos-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "azure-eventhub>=5.15.1",
+    "azure-eventhub-checkpointstoreblob-aio>=1.2.0",
+    "langchain-snowflake>=0.2.2",
+    "langgraph>=0.6.11",
+    "langgraph-checkpoint-snowflake>=0.1.0",
+    "pytest>=9.0.2",
+    "python-dotenv>=1.2.1",
+    "snowflake-ml-python>=1.29.0",
+    "snowflake-snowpark-python>=1.46.0",
+]
